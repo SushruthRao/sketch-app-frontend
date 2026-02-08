@@ -1,0 +1,20 @@
+<svg width="400" height="200" viewBox="0 0 300 100" xmlns="http://www.w3.org">
+  <defs>
+    <style type="text/css">
+      @import url('https://fonts.googleapis.com');
+      
+      .sketch-text-bold {
+        font-family: 'Gloria Hallelujah', cursive;
+        font-size: 52px;
+        fill: #000;
+        /* Adds thickness to simulate bold */
+        stroke: #000;
+        stroke-width: 1.5px;
+        paint-order: stroke fill;
+      }
+    </style>
+  </defs>
+  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" class="sketch-text-bold">
+    Sketch !
+  </text>
+</svg>

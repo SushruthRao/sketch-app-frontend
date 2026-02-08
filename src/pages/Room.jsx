@@ -1,0 +1,727 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import webSocketService from "../service/WebSocketService";
+import { getRoomDetails } from "../service/RoomService";
+import { getActiveSession } from "../service/SessionService";
+import { useNavigate, useParams } from "react-router-dom";
+import SketchTitleComponent from "../components/SketchTitleComponent";
+import SketchButton from "../components/SketchButton";
+import { useToast } from "../toast/CustomToastHook";
+import { ROOM_CONFIG as CONFIG } from "../config/LabelConfig";
+import { logger } from "../utils/Logger";
+import CountdownTimer from "../components/CountdownTimer";
+import SketchChatBox from "../components/SketchChatBox";
+import SketchLeaderboard from "../components/SketchLeaderboard";
+
+const Room = () => {
+
+  const { roomCode } = useParams();
+  const navigate = useNavigate();
+  const [players, setPlayers] = useState([]);
+  const [room, setRoom] = useState(null);
+  const [wsConnected, setWsConnected] = useState(false);
+  const username = localStorage.getItem("userName");
+  const token = localStorage.getItem("userToken");
+  const [gameStarted, setGameStarted] = useState(false);
+  const [session, setSession] = useState(null);
+  const [error, setError] = useState("");
+  const [isHost, setIsHost] = useState(false);
+  const wsInitialized = useRef(false);
+  const { showSuccessToast, showErrorToast } = useToast();
+  const [disconnectedPlayers, setDisconnectedPlayers] = useState(new Set());
+  const [reconnectionTimers, setReconnectionTimers] = useState({});
+  const [isGameEnded, setIsGameEnded] = useState(false);
+  const [messages, setMessages] = useState([]);
+
+  // Round state
+  const [currentRound, setCurrentRound] = useState(null);
+  const [totalRounds, setTotalRounds] = useState(null);
+  const [currentDrawer, setCurrentDrawer] = useState(null);
+  const [currentWord, setCurrentWord] = useState(null);
+  const [wordLength, setWordLength] = useState(0);
+  const [roundTimer, setRoundTimer] = useState(null);
+  const [scores, setScores] = useState([]);
+  const [roundTransition, setRoundTransition] = useState(null);
+  const [gameOverData, setGameOverData] = useState(null);
+  const [correctGuessers, setCorrectGuessers] = useState([]);
+  const [totalGuessers, setTotalGuessers] = useState(0);
+
+  // Derived - avoids stale closure issues since it's computed fresh every render
+  const isDrawer = gameStarted && currentDrawer != null && currentDrawer === username;
+
+  const handleWordReceived = (data) => {
+    setCurrentWord(data.word);
+    logger(CONFIG.fileName, "handleWordReceived", `Your word: ${data.word}`);
+  };
+
+  const handleRoundStateReceived = (data) => {
+    setGameStarted(true);
+    if (data.totalRounds) setTotalRounds(data.totalRounds);
+    if (data.players) setScores(data.players);
+
+    if (data.betweenRounds) {
+      setCurrentRound(data.roundNumber);
+      setCurrentDrawer(null);
+      setRoundTimer(null);
+      setRoundTransition({ roundNumber: data.roundNumber, word: null, reason: "RECONNECTED" });
+      logger(CONFIG.fileName, "handleRoundStateReceived", `Reconnected between rounds (last completed: ${data.roundNumber})`);
+      return;
+    }
+
+    setCurrentRound(data.roundNumber);
+    setCurrentDrawer(data.drawerUsername);
+    setWordLength(data.wordLength);
+    setRoundTransition(null);
+    if (data.totalGuessers != null) setTotalGuessers(data.totalGuessers);
+    if (data.correctGuessers) setCorrectGuessers(data.correctGuessers);
+    const duration = data.durationSeconds || 60;
+    const remaining = duration - data.elapsedSeconds;
+    if (remaining > 0) {
+      setRoundTimer(Date.now() + remaining * 1000);
+    }
+    logger(CONFIG.fileName, "handleRoundStateReceived", `Reconnected to round ${data.roundNumber}, drawer: ${data.drawerUsername}`);
+  };
+
+  const handleGameError = (data) => {
+    showErrorToast(data.message || "Action blocked");
+  };
+
+  const handleRoomUpdate = (data) => {
+    const roundEventTypes = [
+      CONFIG.roomStatus.ROUND_STARTED,
+      CONFIG.roomStatus.ROUND_ENDED,
+      CONFIG.roomStatus.CORRECT_GUESS,
+      CONFIG.roomStatus.CHAT_MESSAGE,
+      CONFIG.roomStatus.ALL_ROUNDS_COMPLETE,
+    ];
+    if (data.players && !roundEventTypes.includes(data.type)) {
+      setPlayers(data.players);
+    }
+    if (data.type === CONFIG.roomStatus.PLAYER_JOINED) {
+      logger(
+        CONFIG.fileName,
+        CONFIG.methods.handleRoomUpdate,
+        data.username + CONFIG.messages.playerJoinedMessage,
+        data.username,
+      );
+      const playerJoinedChatMessage = {
+          text:  data.username + CONFIG.messages.playerJoinedMessage,
+          isSystem: true
+      };
+      setMessages((prevMessages) => [...prevMessages, playerJoinedChatMessage]);
+      showSuccessToast(data.username + CONFIG.messages.playerJoinedMessage);
+    } else if (data.type === CONFIG.roomStatus.PLAYER_DISCONNECTED) {
+      logger(
+        CONFIG.fileName,
+        CONFIG.methods.handleRoomUpdate,
+        data.username + CONFIG.messages.playerDisconnectedMessage,
+        data.username,
+      );
+      setDisconnectedPlayers((prev) => new Set([...prev, data.username]));
+      showErrorToast(
+        data.username + CONFIG.messages.playerDisconnectedMessage,
+      );
+      const playerDisconnectedChatMessage = {
+          text:  data.username + CONFIG.messages.playerDisconnectedMessage,
+          isSystem: true
+      };
+      setMessages((prevMessages) => [...prevMessages, playerDisconnectedChatMessage]);
+      const endTime = Date.now() + data.gracePeriod * 1000;
+      setReconnectionTimers((prev) => ({
+        ...prev,
+        [data.username]: endTime,
+      }));
+
+      setTimeout(() => {
+        setReconnectionTimers((prev) => {
+          const newTimers = { ...prev };
+          delete newTimers[data.username];
+          return newTimers;
+        });
+      }, data.gracePeriod * 1000);
+    } else if (data.type === CONFIG.roomStatus.PLAYER_RECONNECTED) {
+      logger(
+        CONFIG.fileName,
+        CONFIG.methods.handleRoomUpdate,
+        data.username + CONFIG.messages.playerReconnectedMessage,
+        data.username,
+      );
+      setDisconnectedPlayers((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(data.username);
+        return newSet;
+      });
+
+      setReconnectionTimers((prev) => {
+        const newTimers = { ...prev };
+        delete newTimers[data.username];
+        return newTimers;
+      });
+      showSuccessToast(
+        data.username + CONFIG.messages.playerReconnectedMessage,
+      );
+
+    } else if (data.type === CONFIG.roomStatus.PLAYER_LEFT) {
+      logger(
+        CONFIG.fileName,
+        CONFIG.methods.handleRoomUpdate,
+        data.username + CONFIG.messages.playerLeftMessage,
+        data.username,
+      );
+
+      setDisconnectedPlayers((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(data.username);
+        return newSet;
+      });
+       const playerLeftChatMessage = {
+          text:  data.username + CONFIG.messages.playerLeftMessage,
+          isSystem: true
+      };
+      setMessages((prevMessages) => [...prevMessages, playerLeftChatMessage]);
+      setReconnectionTimers((prev) => {
+        const newTimers = { ...prev };
+        delete newTimers[data.username];
+        return newTimers;
+      });
+
+      showErrorToast(data.username + CONFIG.messages.playerLeftMessage);
+    } else if (data.type === CONFIG.roomStatus.HOST_CHANGED) {
+      logger(
+        CONFIG.fileName,
+        CONFIG.methods.handleRoomUpdate,
+        data.newHost + CONFIG.messages.playerHostChangeMessage,
+        data.newHost,
+      );
+      showSuccessToast(
+      data.newHost + CONFIG.messages.playerHostChangeMessage,
+      );
+      const hostChangedChatMessage = {
+          text:  data.newHost + CONFIG.messages.playerHostChangeMessage,
+          isSystem: true
+      };
+      setMessages((prevMessages) => [...prevMessages, hostChangedChatMessage]);
+      if (data.newHost === username) {
+        setIsHost(true);
+      }
+    } else if (data.type === CONFIG.roomStatus.GAME_STARTED) {
+      setGameStarted(true);
+      setSession(data);
+      setTotalRounds(data.totalRounds);
+      logger(
+        CONFIG.fileName,
+        CONFIG.methods.handleRoomUpdate,
+        CONFIG.messages.gameStartedMessage,
+      );
+
+       const gameStartedChatMessage = {
+          text:  CONFIG.messages.gameStartedMessage,
+          isSystem: true
+      };
+      setMessages((prevMessages) => [...prevMessages, gameStartedChatMessage]);
+
+      showSuccessToast(CONFIG.messages.gameStartedMessage);
+    } else if (data.type === CONFIG.roomStatus.PLAYER_RECONNECTED_SESSION) {
+      logger(
+        CONFIG.fileName,
+        CONFIG.methods.handleRoomUpdate,
+        data.username + CONFIG.messages.playerReconnectedSessionMessage,
+        data.username,
+      );
+      setDisconnectedPlayers((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(data.username);
+        return newSet;
+      });
+      setReconnectionTimers((prev) => {
+        const newTimers = { ...prev };
+        delete newTimers[data.username];
+        return newTimers;
+      });
+
+      const playerReconnectedChatMessage = {
+          text:  data.username + CONFIG.messages.playerReconnectedSessionMessage,
+          isSystem: true
+      };
+      setMessages((prevMessages) => [...prevMessages, playerReconnectedChatMessage]);
+      showSuccessToast(
+        `${data.username} ${CONFIG.messages.playerReconnectedSessionMessage}`,
+      );
+    } else if (data.type === CONFIG.roomStatus.PLAYER_LEFT_SESSION) {
+      logger(
+        CONFIG.fileName,
+        CONFIG.methods.handleRoomUpdate,
+        data.username + CONFIG.messages.playerLeftSessionMessage,
+        data.username,
+      );
+      const playerLeftSessionChatMessage = {
+          text:  data.username + CONFIG.messages.playerLeftSessionMessage,
+          isSystem: true
+      };
+      setMessages((prevMessages) => [...prevMessages, playerLeftSessionChatMessage]);
+      showSuccessToast(
+        data.username + CONFIG.messages.playerLeftSessionMessage,
+      );
+    } else if (data.type === CONFIG.roomStatus.PLAYER_DISCONNECTED_SESSION) {
+      logger(
+        CONFIG.fileName,
+        CONFIG.methods.handleRoomUpdate,
+        `${data.username} disconnected from game (${data.gracePeriod}s)`,
+        data.username,
+      );
+      setDisconnectedPlayers((prev) => new Set([...prev, data.username]));
+      const gameEndTime = Date.now() + data.gracePeriod * 1000;
+      showErrorToast(
+        `${data.username} disconnected (${data.gracePeriod}s to rejoin)`,
+      );
+      setReconnectionTimers((prev) => ({
+        ...prev,
+        [data.username]: gameEndTime,
+      }));
+      const playerDisconnectedSessionChatMessage = {
+          text:  data.username + CONFIG.messages.playerLeftSessionMessage,
+          isSystem: true
+      };
+      setMessages((prevMessages) => [...prevMessages, playerDisconnectedSessionChatMessage]);
+      setTimeout(() => {
+        setReconnectionTimers((prev) => {
+          const newTimers = { ...prev };
+          delete newTimers[data.username];
+          return newTimers;
+        });
+      }, data.gracePeriod * 1000);
+
+    // --- Round-related message types ---
+    } else if (data.type === CONFIG.roomStatus.ROUND_STARTED) {
+      setCurrentRound(data.roundNumber);
+      setTotalRounds(data.totalRounds);
+      setCurrentDrawer(data.drawerUsername);
+      setWordLength(data.wordLength);
+      setCurrentWord(null);
+      setRoundTransition(null);
+      setRoundTimer(data.durationSeconds ? Date.now() + data.durationSeconds * 1000 : null);
+      setCorrectGuessers([]);
+      setTotalGuessers(data.players ? data.players.length - 1 : 0);
+      if (data.players) {
+        setScores(data.players);
+      }
+      const roundStartedMsg = {
+        text: `Round ${data.roundNumber}! ${data.drawerUsername} is drawing`,
+        isSystem: true
+      };
+      setMessages((prev) => [...prev, roundStartedMsg]);
+      showSuccessToast(`Round ${data.roundNumber} - ${data.drawerUsername} is drawing`);
+
+    } else if (data.type === CONFIG.roomStatus.ROUND_ENDED) {
+      setRoundTimer(null);
+      setCurrentWord(null);
+      setCurrentDrawer(null);
+      setCorrectGuessers([]);
+      setRoundTransition({
+        word: data.word,
+        reason: data.reason,
+        roundNumber: data.roundNumber
+      });
+      const roundEndedMsg = {
+        text: `Round ${data.roundNumber} ended! The word was: ${data.word}`,
+        isSystem: true
+      };
+      setMessages((prev) => [...prev, roundEndedMsg]);
+
+    } else if (data.type === CONFIG.roomStatus.CORRECT_GUESS) {
+      setCorrectGuessers(prev => [...prev, data.username]);
+      setScores(prev => prev.map(s =>
+        s.username === data.username
+          ? { ...s, score: (s.score || 0) + data.score }
+          : s
+      ));
+      const correctMsg = {
+        text: `${data.username} guessed correctly! (+${data.score} points)`,
+        isSystem: true,
+        isCorrectGuess: true
+      };
+      setMessages((prev) => [...prev, correctMsg]);
+      showSuccessToast(`${data.username} guessed correctly!`);
+
+    } else if (data.type === CONFIG.roomStatus.CHAT_MESSAGE) {
+      const chatMsg = {
+        text: data.message,
+        username: data.username,
+        isMe: data.username === username,
+      };
+      setMessages((prev) => [...prev, chatMsg]);
+
+    } else if (data.type === CONFIG.roomStatus.ALL_ROUNDS_COMPLETE) {
+      setScores(data.finalScores || []);
+      setRoundTimer(null);
+      setCurrentRound(null);
+      setCurrentWord(null);
+      setCurrentDrawer(null);
+      setRoundTransition(null);
+      setGameStarted(false);
+      setIsGameEnded(true);
+      setGameOverData({
+        finalScores: data.finalScores || [],
+        winner: data.winner,
+      });
+      const gameOverMsg = {
+        text: `Game over! Winner: ${data.winner || "No winner"}`,
+        isSystem: true
+      };
+      setMessages((prev) => [...prev, gameOverMsg]);
+      showSuccessToast(`Game over! Winner: ${data.winner}`);
+      webSocketService.disconnect();
+      setWsConnected(false);
+
+    } else if (data.type === CONFIG.roomStatus.GAME_ENDED) {
+      webSocketService.disconnect();
+      setWsConnected(false);
+      setGameStarted(false);
+      setIsGameEnded(true);
+      setSession(null);
+      setCurrentRound(null);
+      setCurrentWord(null);
+      setCurrentDrawer(null);
+      setRoundTimer(null);
+      setRoundTransition(null);
+      if (data.finalScores) {
+        setGameOverData({
+          finalScores: data.finalScores,
+          winner: data.winner,
+        });
+      }
+      logger(
+        CONFIG.fileName,
+        CONFIG.methods.handleRoomUpdate,
+        data.winner,
+        data.winner,
+      );
+      const gameEndedChatMessage = {
+          text: data.winner ? `Game ended! Winner: ${data.winner}` : `Game ended!`,
+          isSystem: true
+      };
+      setMessages((prevMessages) => [...prevMessages, gameEndedChatMessage]);
+      showErrorToast(data.winner ? `Game ended! Winner: ${data.winner}` : 'Game ended!')
+    } else {
+      logger(CONFIG.fileName, CONFIG.methods.handleRoomUpdate, `Unhandled message type: ${data.type}`, data);
+    }
+  };
+
+  const handleWebSocketError = useCallback((errorData) => {
+    showErrorToast(`Error connecting to websocket !`)
+    logger(CONFIG.fileName, CONFIG.methods.handleWebSocketError,"WS Error", errorData);
+    setTimeout(() => {
+      webSocketService.disconnect();
+      setWsConnected(false);
+      navigate("/")
+    })
+  }, [navigate, showErrorToast])
+
+  const handleLeave = () => {
+    webSocketService.disconnect();
+    navigate("/");
+  };
+
+  const handleStartGame = () => {
+    if (players.length < 2) {
+      showErrorToast(CONFIG.messages.handleStartGameErrorMessage);
+      return;
+    }
+    console.log("Starting session..");
+    webSocketService.startGame(roomCode);
+  };
+
+  useEffect(() => {
+    console.log(players);
+    players.forEach((player) => {
+      if (player.username == username && player.isHost) {
+        setIsHost(true);
+      }
+    });
+  }, [players]);
+
+  useEffect(() => {
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    const init = async () => {
+      try {
+        const response = await getRoomDetails(roomCode);
+        console.log("RESPONSE - > ")
+        console.log(response)
+
+        if (!response || !response.success) {
+          navigate("/404");
+          return;
+        }
+
+        setRoom(response.room);
+        setPlayers(response.players);
+        if (response.room.status === CONFIG.roomInitStatus.PLAYING) {
+          setGameStarted(true);
+          try {
+            const sessionRes = await getActiveSession(roomCode);
+            if (sessionRes && sessionRes.session) {
+              setTotalRounds(sessionRes.session.totalRounds);
+              if (sessionRes.session.currentRound > 0) {
+                setCurrentRound(sessionRes.session.currentRound);
+              }
+            }
+            if (sessionRes && sessionRes.players) {
+              setScores(sessionRes.players);
+            }
+          } catch (e) {
+            console.error("Failed to pre-load session data", e);
+          }
+        }
+        if (!wsInitialized.current) {
+          wsInitialized.current = true;
+          webSocketService.on("roomUpdate", handleRoomUpdate);
+          webSocketService.on("error", handleWebSocketError);
+          webSocketService.on("word", handleWordReceived);
+          webSocketService.on("roundState", handleRoundStateReceived);
+          webSocketService.on("gameError", handleGameError);
+          if (!webSocketService.connected) {
+            webSocketService.connect(
+              () => {
+                setWsConnected(true);
+                webSocketService.joinRoom(roomCode);
+              },
+              (err) => console.error(err),
+            );
+          } else {
+            setWsConnected(true);
+            webSocketService.joinRoom(roomCode);
+          }
+        }
+      } catch (err) {
+        logger(
+          CONFIG.fileName,
+          CONFIG.methods.init,
+          "Error fetching room",
+          err,
+        );
+        navigate("/404");
+      }
+    };
+
+    init();
+
+    return () => {
+      webSocketService.off("word", handleWordReceived);
+      webSocketService.off("roundState", handleRoundStateReceived);
+      webSocketService.off("gameError", handleGameError);
+      webSocketService.disconnect();
+      wsInitialized.current = false;
+    };
+  }, [roomCode, token]);
+
+  const handleChatSendMessage = (text) => {
+    if (!text.trim()) return;
+    if (gameStarted && isDrawer) return;
+    if (gameStarted) {
+      webSocketService.sendGuess(roomCode, text);
+    } else {
+      const userMessage = {
+        text: text,
+        isMe: true
+      };
+      setMessages((prevMessages) => [...prevMessages, userMessage]);
+    }
+  };
+
+  const getPlayerScore = (playerUsername) => {
+    const scoreEntry = scores.find(s => s.username === playerUsername);
+    return scoreEntry ? scoreEntry.score : 0;
+  };
+
+  return (
+  <div className="flex flex-col lg:flex-row min-h-screen">
+
+    <div className="flex-1 flex flex-col items-center justify-center p-4">
+      <div className="mb-8 flex w-full max-w-md flex-col items-center gap-4">
+        <span className="text-4xl text-black font-gloria">{`Room Code : ${roomCode}`}</span>
+        <div className="flex items-center gap-3 font-gloria">
+          <div
+            className={`h-3 w-3 rounded-full ${wsConnected ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
+          />
+          <span className="text-sm text-gray-500 ">
+            {wsConnected ? "Websocket Connected" : "Websocket Disconnected"}
+          </span>
+        </div>
+        <div className="text-sm text-gray-500 font-gloria">
+          {gameStarted && !isGameEnded && (
+            <span className="game-status text-green-600"> Game Started !</span>
+          )}
+          {isGameEnded && <span className="game-status text-red-600"> Game ended</span>}
+        </div>
+      </div>
+
+      {/* Drawer Word Display */}
+      {gameStarted && currentRound && !isGameEnded && isDrawer && (
+        <div className="w-full max-w-md text-center font-gloria mb-4 p-6 border-4 border-green-400 rounded-lg bg-green-50">
+          <div className="text-sm text-green-600 uppercase tracking-wider mb-1">Your word to draw</div>
+          <div className="text-5xl font-bold text-green-700">{currentWord || "..."}</div>
+          <div className="text-xs text-green-500 mt-2">Chat is disabled while you draw</div>
+        </div>
+      )}
+
+      {/* Round Info Bar */}
+      {gameStarted && currentRound && !isGameEnded && (
+        <div className="w-full max-w-md text-center font-gloria mb-6 p-4 border-2 border-black/10 rounded-lg">
+          {/* Round progress dots */}
+          {totalRounds > 0 && (
+            <div className="flex gap-1.5 justify-center mb-3">
+              {Array.from({ length: totalRounds }, (_, i) => (
+                <div key={i} className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                  i + 1 < currentRound ? 'bg-green-500'
+                  : i + 1 === currentRound ? 'bg-blue-500 ring-2 ring-blue-200'
+                  : 'bg-gray-300'
+                }`} />
+              ))}
+            </div>
+          )}
+          <div className="text-lg font-bold mb-1">
+            Round {currentRound} {totalRounds ? `/ ${totalRounds}` : ''}
+          </div>
+          <div className="text-md text-gray-700 mb-2">
+            {currentDrawer} is drawing
+            {isDrawer && <span className="text-blue-600 font-bold"> (You!)</span>}
+          </div>
+          {/* Word hint for guessers */}
+          {!isDrawer && wordLength > 0 && (
+            <div className="text-xl tracking-widest mt-2">
+              {"_ ".repeat(wordLength).trim()}
+            </div>
+          )}
+          {/* Guess progress */}
+          {totalGuessers > 0 && (
+            <div className="text-sm text-gray-500 mt-2">
+              {correctGuessers.length}/{totalGuessers} guessed correctly
+            </div>
+          )}
+          {roundTimer && (
+            <div className="mt-2 text-lg">
+              <CountdownTimer endTime={roundTimer} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Round Transition */}
+      {roundTransition && !isGameEnded && !gameOverData && (
+        <div className="w-full max-w-md text-center font-gloria mb-4 p-4 bg-yellow-50 border-2 border-black/20 rounded-lg">
+          {roundTransition.word ? (
+            <>
+              <div className="text-lg">Round {roundTransition.roundNumber} ended!</div>
+              <div className="text-xl font-bold mt-1">
+                The word was: {roundTransition.word}
+              </div>
+            </>
+          ) : (
+            <div className="text-lg">Waiting for next round...</div>
+          )}
+          <div className="text-sm text-gray-500 mt-1">Next round starting soon...</div>
+        </div>
+      )}
+
+      {/* Game Over Scoreboard */}
+      {gameOverData && (
+        <SketchLeaderboard
+          finalScores={gameOverData.finalScores}
+          winner={gameOverData.winner}
+          onHome={() => navigate("/")}
+        />
+      )}
+
+      <div className="flex w-full max-w-xs flex-col items-center text-center">
+        <h2 className="font-gloria text-2xl mb-4 border-b-2 border-black/10 pb-2 w-full">
+          Users: {players.length}
+        </h2>
+
+        <ul className="flex w-full flex-col gap-3">
+          <h1 className="font-gloria text-gray-700 text-sm italic mb-2">
+            Connected Players
+          </h1>
+
+          {players.length > 0 ? (
+            players.map((player) => {
+              const playerUsername = player.username || player;
+              const isCurrentUser = playerUsername === username;
+              const isPlayerHost = player.isHost;
+              const isDisconnected = disconnectedPlayers.has(playerUsername);
+              const timerEndTime = reconnectionTimers[playerUsername];
+              const isPlayerDrawing = gameStarted && currentDrawer === playerUsername;
+
+              return (
+                <li
+                  key={player.userId || playerUsername}
+                  className={`font-gloria text-xl p-2 rounded-lg border transition-all flex flex-col items-center ${isPlayerDrawing ? 'border-green-400 bg-green-50' : 'border-transparent hover:border-black/5'}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={isDisconnected ? 'line-through text-gray-400' : ''}>
+                      {playerUsername}
+                    </span>
+                    {isCurrentUser && <span className="text-blue-500 text-sm text-bold"> (You)</span>}
+                    {isPlayerHost && <span className="text-green-800 text-sm text-bold"> (Host)</span>}
+                    {isPlayerDrawing && <span className="text-purple-600 text-sm font-bold"> (Drawing)</span>}
+                    {gameStarted && currentRound && correctGuessers.includes(playerUsername) && (
+                      <span className="text-green-500 text-sm font-bold"> Guessed!</span>
+                    )}
+                    {gameStarted && (
+                      <span className="text-sm text-gray-600">
+                        {getPlayerScore(playerUsername)} pts
+                      </span>
+                    )}
+                  </div>
+                  {isDisconnected && (
+                    <div className="flex items-center gap-2">
+                       <span className="text-red-500 text-sm font-bold">Disconnected</span>
+                       {timerEndTime && <CountdownTimer endTime={timerEndTime}/>}
+                    </div>
+                  )}
+                </li>
+              );
+            })
+          ) : (
+            <li className="font-gloria text-gray-400 italic">
+              No user connected here now
+            </li>
+          )}
+        </ul>
+        <div className="flex flex-col gap-4 mt-10 w-full max-w-[240px]">
+          {!isGameEnded && !gameStarted && isHost && (
+            <SketchButton
+              text={CONFIG.ui.startGameButton.startGameButtonText}
+              color={CONFIG.ui.startGameButton.startGameButtonColor}
+              onClick={handleStartGame}
+            />
+          )}
+
+          <SketchButton
+            text={CONFIG.ui.leaveButton.leaveButtonText}
+            color={CONFIG.ui.leaveButton.leaveButtonColor}
+            onClick={handleLeave}
+          />
+        </div>
+      </div>
+    </div>
+       <div className="w-full lg:w-1/3 p-4 flex items-center justify-center border-b lg:border-b-0 lg:border-r border-black/5">
+      <SketchChatBox
+        messages={messages}
+        onSend={handleChatSendMessage}
+        maxWidth="400px"
+        maxHeight="80vh"
+        gameStarted={gameStarted}
+        isDrawer={isDrawer}
+        disabled={gameStarted && isDrawer}
+      />
+    </div>
+  </div>
+);
+};
+
+export default Room;

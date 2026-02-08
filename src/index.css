@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "GloriaHallelujah";
+  src:
+    local("GloriaHallelujah"),
+    url("./assets/font/GloriaHallelujah-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "GloriaHallelujah", sans-serif;
+  background-image: url("./assets/paper_background.jpg");
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  min-height: 100dvh;
+  width: 100%;
+  background-color: #f3f4f6;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 10px;
+}
+
+.sketch-input::placeholder {
+  font-family: "Gloria Hallelujah", cursive;
+  opacity: 0.6;
+}
+
+.sketch-input {
+  font-family: "Gloria Hallelujah", cursive;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 10px;
+}
+.sketch-input::placeholder {
+  font-family: "Gloria Hallelujah", cursive;
+}
+
+.sketch-message {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+*::selection {
+  background: #5cc1ff59;
+}
+*::-moz-selection {
+  background: #5cc1ff59;
+}
+*::-webkit-selection {
+  background: #5cc1ff59;
+}
