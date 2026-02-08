@@ -29,6 +29,7 @@ class WebSocketService {
                     this.subscribeToErrors();
                     this.subscribeToWord();
                     this.subscribeToRoundState();
+                    this.subscribeToCanvasState();
                     console.log("ws connected");
                     onConnected();
                 },
@@ -100,6 +101,64 @@ class WebSocketService {
             console.log('Round state received', data);
             this.notify('roundState', data);
         })
+    }
+
+    subscribeToCanvasState() {
+        if(!this.connected)
+        {
+            console.error("subscribeToCanvasState : not connected to ws")
+            return;
+        }
+        this.client.subscribe('/user/queue/canvas-state', (message) => {
+            const data = JSON.parse(message.body);
+            console.log('Canvas state received', data);
+            this.notify('canvasState', data);
+        })
+    }
+
+    subscribeToDrawChannel(roomCode) {
+        if(!this.connected)
+        {
+            console.error("subscribeToDrawChannel : not connected to ws")
+            return;
+        }
+        this.client.subscribe(`/topic/room/${roomCode}/draw`, (message) => {
+            const data = JSON.parse(message.body);
+            this.notify('drawStroke', data);
+        })
+    }
+
+    subscribeToDraw(roomCode, callback) {
+        if (!this.connected || !this.client) {
+            console.error("subscribeToDraw: not connected to ws");
+            return null;
+        }
+        const subscription = this.client.subscribe(`/topic/room/${roomCode}/draw`, (message) => {
+            const data = JSON.parse(message.body);
+            callback(data);
+        });
+        console.log(`Direct draw subscription created for room ${roomCode}`);
+        return subscription;
+    }
+
+    sendDrawStroke(roomCode, strokeData) {
+        if(!this.connected)
+        {
+            console.log("error in websocketservice - not connected")
+            return;
+        }
+        this.client.publish({
+            destination : `/app/room/${roomCode}/draw`,
+            body : JSON.stringify(strokeData)
+        });
+    }
+
+    sendCanvasClear(roomCode) {
+        if(!this.connected) return;
+        this.client.publish({
+            destination : `/app/room/${roomCode}/canvas-clear`,
+            body : JSON.stringify({})
+        });
     }
 
     joinRoom(roomCode)

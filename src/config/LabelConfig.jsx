@@ -69,7 +69,7 @@ export const HOME_CONFIG = {
   fields: [
     { id: "username", type: "text", placeholder: "Username" },
     { id: "email", type: "email", placeholder: "Email" },
-    { id: "passwordHash", type: "password", placeholder: "Password" },
+    { id: "password", type: "password", placeholder: "Password" },
   ],
 
   ui: {
@@ -144,6 +144,7 @@ export const ROOM_CONFIG = {
         CORRECT_GUESS : "CORRECT_GUESS",
         CHAT_MESSAGE : "CHAT_MESSAGE",
         ALL_ROUNDS_COMPLETE : "ALL_ROUNDS_COMPLETE",
+        CANVAS_CLEAR : "CANVAS_CLEAR",
     },
 
     roomInitStatus : {
@@ -161,7 +162,8 @@ export const ROOM_CONFIG = {
         playerLeftSessionMessage : " left session !",
         winnerMessage : "Game ended with winner",
         noWinnerMessage : "Game ended without winner",
-        handleStartGameErrorMessage : "Need atleast 2 users to start session"
+        handleStartGameErrorMessage : "Need atleast 2 users to start session",
+        roomFullMessage : "Room is full!"
     }
 }
 

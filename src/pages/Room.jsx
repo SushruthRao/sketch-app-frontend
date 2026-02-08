@@ -13,6 +13,7 @@ import { logger } from "../utils/Logger";
 import CountdownTimer from "../components/CountdownTimer";
 import SketchChatBox from "../components/SketchChatBox";
 import SketchLeaderboard from "../components/SketchLeaderboard";
+import Whiteboard from "../components/Whiteboard";
 
 const Room = () => {
 
@@ -539,186 +540,208 @@ const Room = () => {
   };
 
   return (
-  <div className="flex flex-col lg:flex-row min-h-screen">
+  <div className="h-screen flex flex-col overflow-hidden">
 
-    <div className="flex-1 flex flex-col items-center justify-center p-4">
-      <div className="mb-8 flex w-full max-w-md flex-col items-center gap-4">
-        <span className="text-4xl text-black font-gloria">{`Room Code : ${roomCode}`}</span>
-        <div className="flex items-center gap-3 font-gloria">
-          <div
-            className={`h-3 w-3 rounded-full ${wsConnected ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
-          />
-          <span className="text-sm text-gray-500 ">
-            {wsConnected ? "Websocket Connected" : "Websocket Disconnected"}
-          </span>
+    {/* ── HEADER BAR ── */}
+    <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-black/10 font-gloria bg-white">
+      {/* Left: Room code + connection */}
+      <div className="flex items-center gap-3">
+        <span className="text-lg font-bold">{`Room: ${roomCode}`}</span>
+        <div className="flex items-center gap-1.5">
+          <div className={`h-2.5 w-2.5 rounded-full ${wsConnected ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
+          <span className="text-xs text-gray-500">{wsConnected ? "Connected" : "Disconnected"}</span>
         </div>
-        <div className="text-sm text-gray-500 font-gloria">
-          {gameStarted && !isGameEnded && (
-            <span className="game-status text-green-600"> Game Started !</span>
-          )}
-          {isGameEnded && <span className="game-status text-red-600"> Game ended</span>}
-        </div>
+        {gameStarted && !isGameEnded && <span className="text-xs text-green-600 font-bold">LIVE</span>}
+        {isGameEnded && <span className="text-xs text-red-600 font-bold">ENDED</span>}
       </div>
 
-      {/* Drawer Word Display */}
-      {gameStarted && currentRound && !isGameEnded && isDrawer && (
-        <div className="w-full max-w-md text-center font-gloria mb-4 p-6 border-4 border-green-400 rounded-lg bg-green-50">
-          <div className="text-sm text-green-600 uppercase tracking-wider mb-1">Your word to draw</div>
-          <div className="text-5xl font-bold text-green-700">{currentWord || "..."}</div>
-          <div className="text-xs text-green-500 mt-2">Chat is disabled while you draw</div>
-        </div>
-      )}
-
-      {/* Round Info Bar */}
+      {/* Center: Round info (only during active game) */}
       {gameStarted && currentRound && !isGameEnded && (
-        <div className="w-full max-w-md text-center font-gloria mb-6 p-4 border-2 border-black/10 rounded-lg">
-          {/* Round progress dots */}
+        <div className="flex items-center gap-3 text-sm">
+          {/* Round dots */}
           {totalRounds > 0 && (
-            <div className="flex gap-1.5 justify-center mb-3">
+            <div className="flex gap-1">
               {Array.from({ length: totalRounds }, (_, i) => (
-                <div key={i} className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                <div key={i} className={`w-2 h-2 rounded-full ${
                   i + 1 < currentRound ? 'bg-green-500'
-                  : i + 1 === currentRound ? 'bg-blue-500 ring-2 ring-blue-200'
+                  : i + 1 === currentRound ? 'bg-blue-500 ring-1 ring-blue-200'
                   : 'bg-gray-300'
                 }`} />
               ))}
             </div>
           )}
-          <div className="text-lg font-bold mb-1">
-            Round {currentRound} {totalRounds ? `/ ${totalRounds}` : ''}
-          </div>
-          <div className="text-md text-gray-700 mb-2">
+          <span className="font-bold">Round {currentRound}{totalRounds ? `/${totalRounds}` : ''}</span>
+          <span className="text-gray-500">|</span>
+          <span className="text-gray-700">
             {currentDrawer} is drawing
             {isDrawer && <span className="text-blue-600 font-bold"> (You!)</span>}
-          </div>
+          </span>
           {/* Word hint for guessers */}
           {!isDrawer && wordLength > 0 && (
-            <div className="text-xl tracking-widest mt-2">
-              {"_ ".repeat(wordLength).trim()}
-            </div>
+            <>
+              <span className="text-gray-500">|</span>
+              <span className="tracking-widest font-mono">{"_ ".repeat(wordLength).trim()}</span>
+            </>
+          )}
+          {/* Drawer word (inline) */}
+          {isDrawer && currentWord && (
+            <>
+              <span className="text-gray-500">|</span>
+              <span className="text-green-700 font-bold bg-green-50 px-2 py-0.5 rounded border border-green-300">
+                {currentWord}
+              </span>
+            </>
           )}
           {/* Guess progress */}
           {totalGuessers > 0 && (
-            <div className="text-sm text-gray-500 mt-2">
-              {correctGuessers.length}/{totalGuessers} guessed correctly
-            </div>
-          )}
-          {roundTimer && (
-            <div className="mt-2 text-lg">
-              <CountdownTimer endTime={roundTimer} />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Round Transition */}
-      {roundTransition && !isGameEnded && !gameOverData && (
-        <div className="w-full max-w-md text-center font-gloria mb-4 p-4 bg-yellow-50 border-2 border-black/20 rounded-lg">
-          {roundTransition.word ? (
             <>
-              <div className="text-lg">Round {roundTransition.roundNumber} ended!</div>
-              <div className="text-xl font-bold mt-1">
-                The word was: {roundTransition.word}
-              </div>
+              <span className="text-gray-500">|</span>
+              <span className="text-gray-500">{correctGuessers.length}/{totalGuessers} guessed</span>
             </>
-          ) : (
-            <div className="text-lg">Waiting for next round...</div>
           )}
-          <div className="text-sm text-gray-500 mt-1">Next round starting soon...</div>
         </div>
       )}
 
-      {/* Game Over Scoreboard */}
-      {gameOverData && (
-        <SketchLeaderboard
-          finalScores={gameOverData.finalScores}
-          winner={gameOverData.winner}
-          onHome={() => navigate("/")}
-        />
-      )}
-
-      <div className="flex w-full max-w-xs flex-col items-center text-center">
-        <h2 className="font-gloria text-2xl mb-4 border-b-2 border-black/10 pb-2 w-full">
-          Users: {players.length}
-        </h2>
-
-        <ul className="flex w-full flex-col gap-3">
-          <h1 className="font-gloria text-gray-700 text-sm italic mb-2">
-            Connected Players
-          </h1>
-
-          {players.length > 0 ? (
-            players.map((player) => {
-              const playerUsername = player.username || player;
-              const isCurrentUser = playerUsername === username;
-              const isPlayerHost = player.isHost;
-              const isDisconnected = disconnectedPlayers.has(playerUsername);
-              const timerEndTime = reconnectionTimers[playerUsername];
-              const isPlayerDrawing = gameStarted && currentDrawer === playerUsername;
-
-              return (
-                <li
-                  key={player.userId || playerUsername}
-                  className={`font-gloria text-xl p-2 rounded-lg border transition-all flex flex-col items-center ${isPlayerDrawing ? 'border-green-400 bg-green-50' : 'border-transparent hover:border-black/5'}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={isDisconnected ? 'line-through text-gray-400' : ''}>
-                      {playerUsername}
-                    </span>
-                    {isCurrentUser && <span className="text-blue-500 text-sm text-bold"> (You)</span>}
-                    {isPlayerHost && <span className="text-green-800 text-sm text-bold"> (Host)</span>}
-                    {isPlayerDrawing && <span className="text-purple-600 text-sm font-bold"> (Drawing)</span>}
-                    {gameStarted && currentRound && correctGuessers.includes(playerUsername) && (
-                      <span className="text-green-500 text-sm font-bold"> Guessed!</span>
-                    )}
-                    {gameStarted && (
-                      <span className="text-sm text-gray-600">
-                        {getPlayerScore(playerUsername)} pts
-                      </span>
-                    )}
-                  </div>
-                  {isDisconnected && (
-                    <div className="flex items-center gap-2">
-                       <span className="text-red-500 text-sm font-bold">Disconnected</span>
-                       {timerEndTime && <CountdownTimer endTime={timerEndTime}/>}
-                    </div>
-                  )}
-                </li>
-              );
-            })
-          ) : (
-            <li className="font-gloria text-gray-400 italic">
-              No user connected here now
-            </li>
-          )}
-        </ul>
-        <div className="flex flex-col gap-4 mt-10 w-full max-w-[240px]">
-          {!isGameEnded && !gameStarted && isHost && (
-            <SketchButton
-              text={CONFIG.ui.startGameButton.startGameButtonText}
-              color={CONFIG.ui.startGameButton.startGameButtonColor}
-              onClick={handleStartGame}
-            />
-          )}
-
-          <SketchButton
-            text={CONFIG.ui.leaveButton.leaveButtonText}
-            color={CONFIG.ui.leaveButton.leaveButtonColor}
-            onClick={handleLeave}
-          />
-        </div>
+      {/* Right: Timer */}
+      <div className="flex items-center gap-2">
+        {roundTimer && <CountdownTimer endTime={roundTimer} />}
       </div>
     </div>
-       <div className="w-full lg:w-1/3 p-4 flex items-center justify-center border-b lg:border-b-0 lg:border-r border-black/5">
-      <SketchChatBox
-        messages={messages}
-        onSend={handleChatSendMessage}
-        maxWidth="400px"
-        maxHeight="80vh"
-        gameStarted={gameStarted}
-        isDrawer={isDrawer}
-        disabled={gameStarted && isDrawer}
-      />
+
+    {/* ── MAIN CONTENT ── */}
+    <div className="flex-1 flex overflow-hidden">
+
+      {/* LEFT: Whiteboard / Lobby / Transition / Game Over */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
+
+        {/* Lobby (pre-game) */}
+        {!gameStarted && !isGameEnded && (
+          <div className="flex flex-col items-center gap-4 font-gloria">
+            <span className="text-3xl font-bold">Waiting for players...</span>
+            <span className="text-gray-500 text-sm">Players: {players.length}</span>
+          </div>
+        )}
+
+        {/* Active round — Whiteboard */}
+        {gameStarted && currentRound && !isGameEnded && !roundTransition && (
+          <div className="w-full h-full flex items-center justify-center">
+            <Whiteboard roomCode={roomCode} isDrawer={isDrawer} />
+          </div>
+        )}
+
+        {/* Round Transition */}
+        {roundTransition && !isGameEnded && !gameOverData && (
+          <div className="w-full max-w-md text-center font-gloria p-4 bg-yellow-50 border-2 border-black/20 rounded-lg">
+            {roundTransition.word ? (
+              <>
+                <div className="text-lg">Round {roundTransition.roundNumber} ended!</div>
+                <div className="text-xl font-bold mt-1">The word was: {roundTransition.word}</div>
+              </>
+            ) : (
+              <div className="text-lg">Waiting for next round...</div>
+            )}
+            <div className="text-sm text-gray-500 mt-1">Next round starting soon...</div>
+          </div>
+        )}
+
+        {/* Game Over Scoreboard */}
+        {gameOverData && (
+          <SketchLeaderboard
+            finalScores={gameOverData.finalScores}
+            winner={gameOverData.winner}
+            onHome={() => navigate("/")}
+          />
+        )}
+      </div>
+
+      {/* RIGHT SIDEBAR: Players + Chat + Buttons */}
+      <div className="w-80 shrink-0 flex flex-col border-l border-black/10 bg-white">
+
+        {/* Players list */}
+        <div className="shrink-0 p-3 border-b border-black/10 max-h-[200px] overflow-y-auto">
+          <h2 className="font-gloria text-sm font-bold mb-2 text-gray-600">
+            Players ({players.length})
+          </h2>
+          <ul className="flex flex-col gap-1">
+            {players.length > 0 ? (
+              players.map((player) => {
+                const playerUsername = player.username || player;
+                const isCurrentUser = playerUsername === username;
+                const isPlayerHost = player.isHost;
+                const isDisconnected = disconnectedPlayers.has(playerUsername);
+                const timerEndTime = reconnectionTimers[playerUsername];
+                const isPlayerDrawing = gameStarted && currentDrawer === playerUsername;
+
+                return (
+                  <li
+                    key={player.userId || playerUsername}
+                    className={`font-gloria text-sm px-2 py-1 rounded flex items-center justify-between ${
+                      isPlayerDrawing ? 'bg-green-50 border border-green-300' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1 min-w-0">
+                      <span className={`truncate ${isDisconnected ? 'line-through text-gray-400' : ''}`}>
+                        {playerUsername}
+                      </span>
+                      {isCurrentUser && <span className="text-blue-500 text-xs">(You)</span>}
+                      {isPlayerHost && <span className="text-green-700 text-xs">(Host)</span>}
+                      {isPlayerDrawing && <span className="text-purple-600 text-xs font-bold">Drawing</span>}
+                      {gameStarted && currentRound && correctGuessers.includes(playerUsername) && (
+                        <span className="text-green-500 text-xs font-bold">Guessed!</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {gameStarted && (
+                        <span className="text-xs text-gray-500">{getPlayerScore(playerUsername)}pts</span>
+                      )}
+                      {isDisconnected && (
+                        <span className="text-red-500 text-xs font-bold">
+                          DC {timerEndTime && <CountdownTimer endTime={timerEndTime}/>}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                );
+              })
+            ) : (
+              <li className="font-gloria text-gray-400 text-sm italic">No players yet</li>
+            )}
+          </ul>
+        </div>
+
+        {/* Chat (fills remaining space) */}
+        <div className="flex-1 overflow-hidden">
+          <SketchChatBox
+            messages={messages}
+            onSend={handleChatSendMessage}
+            maxWidth="100%"
+            maxHeight="100%"
+            gameStarted={gameStarted}
+            isDrawer={isDrawer}
+            disabled={gameStarted && isDrawer}
+          />
+        </div>
+
+        {/* Buttons */}
+        <div className="shrink-0 p-3 border-t border-black/10 flex gap-2">
+          {!isGameEnded && !gameStarted && isHost && (
+            <div className="flex-1">
+              <SketchButton
+                text={CONFIG.ui.startGameButton.startGameButtonText}
+                color={CONFIG.ui.startGameButton.startGameButtonColor}
+                onClick={handleStartGame}
+              />
+            </div>
+          )}
+          <div className={!isGameEnded && !gameStarted && isHost ? "flex-1" : "w-full"}>
+            <SketchButton
+              text={CONFIG.ui.leaveButton.leaveButtonText}
+              color={CONFIG.ui.leaveButton.leaveButtonColor}
+              onClick={handleLeave}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 );
