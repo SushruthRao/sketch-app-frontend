@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import rough from "roughjs";
 import webSocketService from "../service/WebSocketService";
 import { getRoomDetails } from "../service/RoomService";
 import { getActiveSession } from "../service/SessionService";
@@ -48,8 +49,142 @@ const Room = () => {
   const [correctGuessers, setCorrectGuessers] = useState([]);
   const [totalGuessers, setTotalGuessers] = useState(0);
 
-  // Derived - avoids stale closure issues since it's computed fresh every render
   const isDrawer = gameStarted && currentDrawer != null && currentDrawer === username;
+
+  // Animated sketch header
+  const headerRef = useRef(null);
+  const headerCanvasRef = useRef(null);
+  const headerAnimRef = useRef();
+  const [headerDimensions, setHeaderDimensions] = useState({ width: 0, height: 0 });
+
+  // Animated sketch player list
+  const playersRef = useRef(null);
+  const playersCanvasRef = useRef(null);
+  const playersAnimRef = useRef();
+  const [playersDimensions, setPlayersDimensions] = useState({ width: 0, height: 0 });
+
+  // Animated sketch buttons
+  const buttonsRef = useRef(null);
+  const buttonsCanvasRef = useRef(null);
+  const buttonsAnimRef = useRef();
+  const [buttonsDimensions, setButtonsDimensions] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      setHeaderDimensions({ width, height });
+    });
+    observer.observe(headerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const canvas = headerCanvasRef.current;
+    if (!canvas || headerDimensions.width === 0) return;
+    const rc = rough.canvas(canvas);
+    const ctx = canvas.getContext("2d");
+    let lastDrawTime = performance.now();
+    const fpsInterval = 1000 / 8;
+
+    const animate = (currentTime) => {
+      headerAnimRef.current = requestAnimationFrame(animate);
+      const elapsed = currentTime - lastDrawTime;
+
+      if (elapsed > fpsInterval) {
+        lastDrawTime = currentTime - (elapsed % fpsInterval);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        rc.rectangle(5, 5, headerDimensions.width - 10, headerDimensions.height - 10, {
+          roughness: 0.8 ,
+          stroke: "#333",
+          strokeWidth: 1.7,
+          fill: "transparent",
+        });
+      }
+    };
+
+    headerAnimRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(headerAnimRef.current);
+  }, [headerDimensions]);
+
+  useEffect(() => {
+    if (!playersRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      setPlayersDimensions({ width, height });
+    });
+    observer.observe(playersRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const canvas = playersCanvasRef.current;
+    if (!canvas || playersDimensions.width === 0) return;
+    const rc = rough.canvas(canvas);
+    const ctx = canvas.getContext("2d");
+    let lastDrawTime = performance.now();
+    const fpsInterval = 1000 / 8;
+
+    const animate = (currentTime) => {
+      playersAnimRef.current = requestAnimationFrame(animate);
+      const elapsed = currentTime - lastDrawTime;
+
+      if (elapsed > fpsInterval) {
+        lastDrawTime = currentTime - (elapsed % fpsInterval);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        rc.rectangle(5, 5, playersDimensions.width - 10, playersDimensions.height - 10, {
+          roughness: 0.8,
+          stroke: "#333",
+          strokeWidth: 1.7,
+          fill: "transparent",
+        });
+      }
+    };
+
+    playersAnimRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(playersAnimRef.current);
+  }, [playersDimensions]);
+
+  useEffect(() => {
+    if (!buttonsRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      setButtonsDimensions({ width, height });
+    });
+    observer.observe(buttonsRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const canvas = buttonsCanvasRef.current;
+    if (!canvas || buttonsDimensions.width === 0) return;
+    const rc = rough.canvas(canvas);
+    const ctx = canvas.getContext("2d");
+    let lastDrawTime = performance.now();
+    const fpsInterval = 1000 / 8;
+
+    const animate = (currentTime) => {
+      buttonsAnimRef.current = requestAnimationFrame(animate);
+      const elapsed = currentTime - lastDrawTime;
+
+      if (elapsed > fpsInterval) {
+        lastDrawTime = currentTime - (elapsed % fpsInterval);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        rc.rectangle(5, 5, buttonsDimensions.width - 10, buttonsDimensions.height - 10, {
+          roughness: 0.8,
+          stroke: "#333",
+          strokeWidth: 1.7,
+          fill: "transparent",
+        });
+      }
+    };
+
+    buttonsAnimRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(buttonsAnimRef.current);
+  }, [buttonsDimensions]);
 
   const handleWordReceived = (data) => {
     setCurrentWord(data.word);
@@ -543,68 +678,60 @@ const Room = () => {
   <div className="h-screen flex flex-col overflow-hidden">
 
     {/* ── HEADER BAR ── */}
-    <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-black/10 font-gloria bg-white">
-      {/* Left: Room code + connection */}
-      <div className="flex items-center gap-3">
-        <span className="text-lg font-bold">{`Room: ${roomCode}`}</span>
-        <div className="flex items-center gap-1.5">
-          <div className={`h-2.5 w-2.5 rounded-full ${wsConnected ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
-          <span className="text-xs text-gray-500">{wsConnected ? "Connected" : "Disconnected"}</span>
+    <div ref={headerRef} className="shrink-0 relative font-gloria">
+      <canvas
+        ref={headerCanvasRef}
+        width={headerDimensions.width}
+        height={headerDimensions.height}
+        className="absolute inset-0 -z-10"
+      />
+      <div className="flex items-center justify-between px-4 py-2">
+        {/* Left: Room code + connection */}
+        <div className="flex items-center gap-3">
+          <span className="text-lg font-bold">{`Room: ${roomCode}`}</span>
+          <div className="flex items-center gap-1.5">
+            <div className={`h-2.5 w-2.5 rounded-full ${wsConnected ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
+            <span className="text-xs text-gray-500">{wsConnected ? "Connected" : "Disconnected"}</span>
+          </div>
+          {gameStarted && !isGameEnded && <span className="text-xs text-green-600 font-bold">LIVE</span>}
+          {isGameEnded && <span className="text-xs text-red-600 font-bold">ENDED</span>}
         </div>
-        {gameStarted && !isGameEnded && <span className="text-xs text-green-600 font-bold">LIVE</span>}
-        {isGameEnded && <span className="text-xs text-red-600 font-bold">ENDED</span>}
-      </div>
 
-      {/* Center: Round info (only during active game) */}
-      {gameStarted && currentRound && !isGameEnded && (
-        <div className="flex items-center gap-3 text-sm">
-          {/* Round dots */}
-          {totalRounds > 0 && (
-            <div className="flex gap-1">
-              {Array.from({ length: totalRounds }, (_, i) => (
-                <div key={i} className={`w-2 h-2 rounded-full ${
-                  i + 1 < currentRound ? 'bg-green-500'
-                  : i + 1 === currentRound ? 'bg-blue-500 ring-1 ring-blue-200'
-                  : 'bg-gray-300'
-                }`} />
-              ))}
-            </div>
-          )}
-          <span className="font-bold">Round {currentRound}{totalRounds ? `/${totalRounds}` : ''}</span>
-          <span className="text-gray-500">|</span>
-          <span className="text-gray-700">
-            {currentDrawer} is drawing
-            {isDrawer && <span className="text-blue-600 font-bold"> (You!)</span>}
-          </span>
-          {/* Word hint for guessers */}
-          {!isDrawer && wordLength > 0 && (
-            <>
-              <span className="text-gray-500">|</span>
-              <span className="tracking-widest font-mono">{"_ ".repeat(wordLength).trim()}</span>
-            </>
-          )}
-          {/* Drawer word (inline) */}
-          {isDrawer && currentWord && (
-            <>
-              <span className="text-gray-500">|</span>
-              <span className="text-green-700 font-bold bg-green-50 px-2 py-0.5 rounded border border-green-300">
-                {currentWord}
-              </span>
-            </>
-          )}
-          {/* Guess progress */}
-          {totalGuessers > 0 && (
-            <>
-              <span className="text-gray-500">|</span>
-              <span className="text-gray-500">{correctGuessers.length}/{totalGuessers} guessed</span>
-            </>
-          )}
+        {/* Center: Round info (only during active game) */}
+        {gameStarted && currentRound && !isGameEnded && (
+          <div className="flex items-center gap-3 text-sm">
+            {/* Round dots */}
+            {totalRounds > 0 && (
+              <div className="flex gap-1">
+                {Array.from({ length: totalRounds }, (_, i) => (
+                  <div key={i} className={`w-2 h-2 rounded-full ${
+                    i + 1 < currentRound ? 'bg-green-500'
+                    : i + 1 === currentRound ? 'bg-blue-500 ring-1 ring-blue-200'
+                    : 'bg-gray-300'
+                  }`} />
+                ))}
+              </div>
+            )}
+            <span className="font-bold">Round {currentRound}{totalRounds ? `/${totalRounds}` : ''}</span>
+            <span className="text-gray-500">|</span>
+            <span className="text-gray-700">
+              {currentDrawer} is drawing
+              {isDrawer && <span className="text-blue-600 font-bold"> (You!)</span>}
+            </span>
+            {/* Guess progress */}
+            {totalGuessers > 0 && (
+              <>
+                <span className="text-gray-500">|</span>
+                <span className="text-gray-500">{correctGuessers.length}/{totalGuessers} guessed</span>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Right: Timer */}
+        <div className="flex items-center gap-2">
+          {roundTimer && <CountdownTimer endTime={roundTimer} />}
         </div>
-      )}
-
-      {/* Right: Timer */}
-      <div className="flex items-center gap-2">
-        {roundTimer && <CountdownTimer endTime={roundTimer} />}
       </div>
     </div>
 
@@ -624,8 +751,33 @@ const Room = () => {
 
         {/* Active round — Whiteboard */}
         {gameStarted && currentRound && !isGameEnded && !roundTransition && (
-          <div className="w-full h-full flex items-center justify-center">
-            <Whiteboard roomCode={roomCode} isDrawer={isDrawer} />
+          <div className="w-full h-full flex flex-col items-center overflow-hidden">
+            {/* Word display above whiteboard */}
+            <div className="shrink-0 py-2 font-gloria text-center">
+              {isDrawer && currentWord && (
+                <div className="relative inline-block px-6 py-2">
+                  <span className="relative z-10 text-green-700 text-xl font-bold">Your word is: {currentWord}</span>
+                  <div
+                    className="absolute inset-0 -z-10 border-2 border-black"
+                    style={{ borderRadius: "255px 15px 225px 15px/15px 225px 15px 255px" }}
+                  />
+                </div>
+              )}
+              {!isDrawer && wordLength > 0 && (
+                <div className="relative inline-block px-6 py-2">
+                  <span className="relative z-10 text-gray-700 text-xl font-bold">
+                    Guess the word! ({wordLength} letters)
+                  </span>
+                  <div
+                    className="absolute inset-0 -z-10 border-2 border-black"
+                    style={{ borderRadius: "255px 15px 225px 15px/15px 225px 15px 255px" }}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 w-full flex items-center justify-center overflow-hidden mt-3">
+              <Whiteboard roomCode={roomCode} isDrawer={isDrawer} />
+            </div>
           </div>
         )}
 
@@ -655,10 +807,17 @@ const Room = () => {
       </div>
 
       {/* RIGHT SIDEBAR: Players + Chat + Buttons */}
-      <div className="w-80 shrink-0 flex flex-col border-l border-black/10 bg-white">
+      <div className="w-80 shrink-0 flex flex-col border-l border-black/10">
 
         {/* Players list */}
-        <div className="shrink-0 p-3 border-b border-black/10 max-h-[200px] overflow-y-auto">
+        <div ref={playersRef} className="shrink-0 relative max-h-[200px]">
+          <canvas
+            ref={playersCanvasRef}
+            width={playersDimensions.width}
+            height={playersDimensions.height}
+            className="absolute inset-0 -z-10"
+          />
+          <div className="p-3 overflow-y-auto max-h-[200px]">
           <h2 className="font-gloria text-sm font-bold mb-2 text-gray-600">
             Players ({players.length})
           </h2>
@@ -707,6 +866,7 @@ const Room = () => {
               <li className="font-gloria text-gray-400 text-sm italic">No players yet</li>
             )}
           </ul>
+          </div>
         </div>
 
         {/* Chat (fills remaining space) */}
@@ -723,22 +883,30 @@ const Room = () => {
         </div>
 
         {/* Buttons */}
-        <div className="shrink-0 p-3 border-t border-black/10 flex gap-2">
-          {!isGameEnded && !gameStarted && isHost && (
-            <div className="flex-1">
+        <div ref={buttonsRef} className="shrink-0 relative">
+          <canvas
+            ref={buttonsCanvasRef}
+            width={buttonsDimensions.width}
+            height={buttonsDimensions.height}
+            className="absolute inset-0 -z-10"
+          />
+          <div className="p-3 flex gap-2">
+            {!isGameEnded && !gameStarted && isHost && (
+              <div className="flex-1">
+                <SketchButton
+                  text={CONFIG.ui.startGameButton.startGameButtonText}
+                  color={CONFIG.ui.startGameButton.startGameButtonColor}
+                  onClick={handleStartGame}
+                />
+              </div>
+            )}
+            <div className={!isGameEnded && !gameStarted && isHost ? "flex-1" : "w-full"}>
               <SketchButton
-                text={CONFIG.ui.startGameButton.startGameButtonText}
-                color={CONFIG.ui.startGameButton.startGameButtonColor}
-                onClick={handleStartGame}
+                text={CONFIG.ui.leaveButton.leaveButtonText}
+                color={CONFIG.ui.leaveButton.leaveButtonColor}
+                onClick={handleLeave}
               />
             </div>
-          )}
-          <div className={!isGameEnded && !gameStarted && isHost ? "flex-1" : "w-full"}>
-            <SketchButton
-              text={CONFIG.ui.leaveButton.leaveButtonText}
-              color={CONFIG.ui.leaveButton.leaveButtonColor}
-              onClick={handleLeave}
-            />
           </div>
         </div>
       </div>

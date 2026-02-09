@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
+import rough from 'roughjs';
 import webSocketService from '../service/WebSocketService';
 
 const COLORS = [
@@ -18,6 +19,12 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
   const [tool, setTool] = useState('pen');
   const [color, setColor] = useState('#000000');
   const [lineWidth, setLineWidth] = useState(3);
+
+  // Animated sketch border
+  const borderRef = useRef(null);
+  const borderCanvasRef = useRef(null);
+  const borderAnimRef = useRef();
+  const [borderDimensions, setBorderDimensions] = useState({ width: 0, height: 0 });
 
   // Real-time streaming refs
   const sendBufferRef = useRef([]);
@@ -77,6 +84,47 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }, []);
+
+  // Sketch border resize observer
+  useEffect(() => {
+    if (!borderRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      setBorderDimensions({ width, height });
+    });
+    observer.observe(borderRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Sketch border animation
+  useEffect(() => {
+    const canvas = borderCanvasRef.current;
+    if (!canvas || borderDimensions.width === 0) return;
+    const rc = rough.canvas(canvas);
+    const ctx = canvas.getContext('2d');
+    let lastDrawTime = performance.now();
+    const fpsInterval = 1000 / 8;
+
+    const animate = (currentTime) => {
+      borderAnimRef.current = requestAnimationFrame(animate);
+      const elapsed = currentTime - lastDrawTime;
+
+      if (elapsed > fpsInterval) {
+        lastDrawTime = currentTime - (elapsed % fpsInterval);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        rc.rectangle(5, 5, borderDimensions.width - 10, borderDimensions.height - 10, {
+          roughness: 0.8,
+          stroke: '#333',
+          strokeWidth: 1.7,
+          fill: 'transparent',
+        });
+      }
+    };
+
+    borderAnimRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(borderAnimRef.current);
+  }, [borderDimensions]);
 
   // Direct STOMP subscription for draw events — bypasses event system for reliability
   useEffect(() => {
@@ -231,10 +279,16 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
   };
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div ref={borderRef} className="relative flex flex-col items-center gap-2">
+      <canvas
+        ref={borderCanvasRef}
+        width={borderDimensions.width}
+        height={borderDimensions.height}
+        className="absolute inset-0 -z-10"
+      />
       <div
-        className="relative border-2 border-black rounded-lg overflow-hidden bg-white"
-        style={{ width: '100%', maxWidth: '800px', aspectRatio: '4/3' }}
+        className="relative overflow-hidden bg-white mt-2 mx-2"
+        style={{ width: 'calc(100% - 16px)', maxWidth: '800px', aspectRatio: '4/3' }}
       >
         <canvas
           ref={canvasRef}
@@ -251,7 +305,7 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
       </div>
 
       {isDrawer && (
-        <div className="flex items-center gap-3 p-2 border-2 border-black/20 rounded-lg font-gloria flex-wrap justify-center">
+        <div className="flex items-center gap-3 p-2 mb-2 mx-2 border-2 border-black/20 rounded-lg font-gloria flex-wrap justify-center">
           {/* Tool selector */}
           <div className="flex gap-1">
             <button
