@@ -279,7 +279,7 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
   };
 
   return (
-    <div ref={borderRef} className="relative flex flex-col items-center gap-2">
+    <div ref={borderRef} className="relative flex flex-col items-center gap-2 h-full overflow-hidden">
       <canvas
         ref={borderCanvasRef}
         width={borderDimensions.width}
@@ -287,7 +287,7 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
         className="absolute inset-0 -z-10"
       />
       <div
-        className="relative overflow-hidden bg-white mt-2 mx-2"
+        className="relative overflow-hidden bg-white mt-2 mx-2 flex-1 min-h-0"
         style={{ width: 'calc(100% - 16px)', maxWidth: '800px', aspectRatio: '4/3' }}
       >
         <canvas
@@ -305,7 +305,7 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
       </div>
 
       {isDrawer && (
-        <div className="flex items-center gap-3 p-2 mb-2 mx-2 border-2 border-black/20 rounded-lg font-gloria flex-wrap justify-center">
+        <div className="shrink-0 flex items-center gap-3 p-2 mb-2 mx-2 border-2 border-black/20 rounded-lg font-gloria flex-wrap justify-center">
           {/* Tool selector */}
           <div className="flex gap-1">
             <button
