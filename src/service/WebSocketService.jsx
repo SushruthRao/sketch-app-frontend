@@ -194,6 +194,19 @@ class WebSocketService {
         console.log(`Sent startGame client message for ${roomCode}`)
     }
 
+    sendChat(roomCode, message)
+    {
+        if(!this.connected)
+        {
+            console.log("error in websocketservice - not connected")
+            return;
+        }
+        this.client.publish({
+            destination : `/app/room/${roomCode}/chat`,
+            body : JSON.stringify({ message: message })
+        });
+    }
+
     sendGuess(roomCode, message)
     {
         if(!this.connected)

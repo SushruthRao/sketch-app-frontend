@@ -661,11 +661,7 @@ const Room = () => {
     if (gameStarted) {
       webSocketService.sendGuess(roomCode, text);
     } else {
-      const userMessage = {
-        text: text,
-        isMe: true
-      };
-      setMessages((prevMessages) => [...prevMessages, userMessage]);
+      webSocketService.sendChat(roomCode, text);
     }
   };
 
@@ -833,7 +829,7 @@ const Room = () => {
 
                 return (
                   <li
-                    key={player.userId || playerUsername}
+                    key={playerUsername}
                     className={`font-gloria text-sm px-2 py-1 rounded flex items-center justify-between ${
                       isPlayerDrawing ? 'bg-green-50 border border-green-300' : 'hover:bg-gray-50'
                     }`}

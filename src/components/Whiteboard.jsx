@@ -286,22 +286,24 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
         height={borderDimensions.height}
         className="absolute inset-0 -z-10"
       />
-      <div
-        className="relative overflow-hidden bg-white mt-2 mx-2 flex-1 min-h-0"
-        style={{ width: 'calc(100% - 16px)', maxWidth: '800px', aspectRatio: '4/3' }}
-      >
-        <canvas
-          ref={canvasRef}
-          className="w-full h-full block"
-          style={{ cursor: isDrawer ? 'crosshair' : 'default', touchAction: 'none' }}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={finishDrawing}
-          onMouseLeave={finishDrawing}
-          onTouchStart={startDrawing}
-          onTouchMove={draw}
-          onTouchEnd={finishDrawing}
-        />
+      <div className="flex-1 min-h-0 w-full flex items-center justify-center">
+        <div
+          className="relative overflow-hidden bg-white m-2"
+          style={{ width: 'calc(100% - 16px)', maxWidth: '800px', aspectRatio: '4/3', maxHeight: '100%' }}
+        >
+          <canvas
+            ref={canvasRef}
+            className="w-full h-full block"
+            style={{ cursor: isDrawer ? 'crosshair' : 'default', touchAction: 'none' }}
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={finishDrawing}
+            onMouseLeave={finishDrawing}
+            onTouchStart={startDrawing}
+            onTouchMove={draw}
+            onTouchEnd={finishDrawing}
+          />
+        </div>
       </div>
 
       {isDrawer && (
