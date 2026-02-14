@@ -51,7 +51,7 @@ const Login = () => {
     <div className="flex min-h-screen flex-col items-center justify-center p-1">
       <SketchTitleComponent isLogin={true} className="mb-6 ml-22" />
       
-      <form onSubmit={handleSubmit} className="flex w-full max-w-xs flex-col gap-6">
+      <form  className="flex w-full max-w-xs flex-col gap-6">
         {CONFIG.fields.map((field) => (
           <SketchInput
             key={field.id}
@@ -67,6 +67,7 @@ const Login = () => {
           text={CONFIG.ui.loginButton.loginButtonText}
           color={CONFIG.ui.loginButton.loginButtonColor}
           isLoading={loading}
+          onClick={handleSubmit}
         />
 
         <button type="button" onClick={() => navigate("/register")} className="font-gloria text-gray-500 text-sm">
