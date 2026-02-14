@@ -11,8 +11,11 @@
   },
   "dependencies": {
     "@fontsource/gloria-hallelujah": "^5.2.8",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@stomp/stompjs": "^7.3.0",
     "@tailwindcss/vite": "^4.1.18",
+    "@types/three": "^0.182.0",
     "axios": "^1.13.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -21,6 +24,7 @@
     "roughjs": "^4.6.6",
     "sockjs-client": "^1.6.1",
     "tailwindcss": "^4.1.18",
+    "three": "^0.182.0",
     "wired-elements": "^3.0.0-rc.6",
     "wired-elements-react": "^0.1.5"
   },

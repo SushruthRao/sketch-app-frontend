@@ -14,7 +14,7 @@ export const useToast = () => {
         toastProps={toastProps}
       />
     ), {
-      autoClose: 3000,
+      autoClose: 1700,
       position:'top-left',
       customProgressBar: true, 
       hideProgressBar: true,  
@@ -35,7 +35,7 @@ export const useToast = () => {
         toastProps={toastProps}
       />
     ), {
-      autoClose: 3000,
+      autoClose: 1700,
       position:'top-left',
       customProgressBar: true, 
       hideProgressBar: true,   

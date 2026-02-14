@@ -4,10 +4,11 @@ import rough from "roughjs";
 const SketchChatBox = ({
   messages,
   onSend,
-  fps = 8,
+  fps = 7,
   maxWidth = "80vw",
   maxHeight = "80vh",
   gameStarted = false,
+  // eslint-disable-next-line no-unused-vars
   isDrawer = false,
   disabled = false,
 }) => {
@@ -50,13 +51,13 @@ const SketchChatBox = ({
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         rc.rectangle(5, 5, dimensions.width - 10, dimensions.height - 10, {
-          roughness: 1.3,
+          roughness: 0.7,
           stroke: "#333",
           strokeWidth: 2,
           fill: "transparent",
         });
         rc.line(5, 50, dimensions.width - 5, 52, {
-          roughness: 2,
+          roughness: 0.7,
           strokeWidth: 1.5,
         });
       }
@@ -67,7 +68,7 @@ const SketchChatBox = ({
   }, [dimensions, fps]);
 
   const getPlaceholder = () => {
-    if (disabled) return "You're drawing! Watch the guesses...";
+    if (disabled) return "You're drawing! ...";
     if (!gameStarted) return "Write something...";
     return "Type your guess...";
   };
@@ -93,9 +94,9 @@ const SketchChatBox = ({
         className="absolute inset-0 -z-10"
       />
 
-      <div className="flex flex-col h-full p-4 overflow-hidden">
+      <div className="flex flex-col h-80 sm:h-full p-4 overflow-hidden">
         <h3
-          className="h-8 text-xl font-bold text-center mb-2"
+          className="h-8 sticky text-xl font-bold text-center mb-2"
           style={{ fontFamily: "'Gloria Hallelujah', cursive" }}
         >
           Chat !  
@@ -161,7 +162,7 @@ const SketchChatBox = ({
         </div>
         <form onSubmit={handleSubmit} className="relative h-12 shrink-0">
           <input
-            value={text}
+            value={disabled ? getPlaceholder() : text}
             onChange={(e) => !disabled && setText(e.target.value)}
             maxLength={250}
             disabled={disabled}

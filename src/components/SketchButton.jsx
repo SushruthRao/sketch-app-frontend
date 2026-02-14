@@ -51,7 +51,7 @@ const SketchButton = ({
           padding, padding, 
           canvas.width - padding * 2, canvas.height - padding * 2, 
           {
-            roughness: 1.7,
+            roughness: 1.2,
             fill: currentFill,
             fillStyle: 'hachure',
             stroke: stroke,

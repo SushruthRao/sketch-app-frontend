@@ -167,6 +167,25 @@ export const ROOM_CONFIG = {
     }
 }
 
+
+/*
+    WHITEBOARD CONFIG
+*/
+
+export const WHITEBOARD_CONFIG = {
+    colors : [
+      "#000000", "#FF0000", "#00AA00", "#0000FF"
+    ],
+    canvas : {
+      width : 800,
+      height : 600,
+      sendInterval : 50, 
+    }
+}
+
+
+
+
 /*
     TOAST CONFIG
 */
@@ -182,4 +201,3 @@ export const TOAST_CONFIG = {
         errorFillColor : 'rgba(183, 25, 25, 0.50)'
     }
 }
-

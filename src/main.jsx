@@ -41,7 +41,7 @@ createRoot(document.getElementById("root")).render(
       </Routes>
       <ToastContainer
         style={{ zIndex: 99999 }}
-        limit={4}
+        limit={3}
         closeOnClick={true}
         newestOnTop={true}
         closeButton={false}

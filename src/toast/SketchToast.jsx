@@ -55,14 +55,14 @@ const SketchToast = ({
     const rectHeight = canvas.height - pad * 2;
 
     rc.rectangle(pad, pad, rectWidth, rectHeight, {
-      roughness: 1.5,
+      roughness: 0.8,
       stroke: 'transparent', 
       fill: '#ffffffb6',      
       fillStyle: 'solid'
     });
 
     rc.rectangle(pad, pad, rectWidth, rectHeight, {
-      roughness: 1.5,
+      roughness: 0.8,
       fill: isError ? CONFIG.default.errorFillColor : CONFIG.default.successFillColor,
       fillStyle: 'hachure',
       stroke: stroke,        

@@ -30,11 +30,10 @@ const SketchTitleText = ({
         lastDrawTime = currentTime - (elapsed % fpsInterval);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Drawing the SVG path with RoughJS for the "jitter" effect
         rc.path(SVG_PATH, {
           stroke: '#000',
           strokeWidth: strokeWidth,
-          roughness: 1 + Math.sin(timeRef.current) * 0.3, // Animates the shakiness
+          roughness: 1 , 
           bowing: 2,
           fill: 'black',
           fillStyle : 'hachure'

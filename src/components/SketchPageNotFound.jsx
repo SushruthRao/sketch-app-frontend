@@ -19,7 +19,6 @@ const SketchPageNotFound = ({
     zero: "M30 10 C10 10, 5 30, 5 50 C5 70, 10 90, 30 90 C50 90, 55 70, 55 50 C55 30, 50 10, 30 10 Z"
   };
 
-  // Handle Resize
   useEffect(() => {
     const observeTarget = containerRef.current;
     const resizeObserver = new ResizeObserver((entries) => {

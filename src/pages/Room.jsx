@@ -15,9 +15,10 @@ import CountdownTimer from "../components/CountdownTimer";
 import SketchChatBox from "../components/SketchChatBox";
 import SketchLeaderboard from "../components/SketchLeaderboard";
 import Whiteboard from "../components/Whiteboard";
+import SketchClipboard from "../components/SketchClipboard";
+import Scene from "../components/PencilScene";
 
 const Room = () => {
-
   const { roomCode } = useParams();
   const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
@@ -49,25 +50,33 @@ const Room = () => {
   const [correctGuessers, setCorrectGuessers] = useState([]);
   const [totalGuessers, setTotalGuessers] = useState(0);
 
-  const isDrawer = gameStarted && currentDrawer != null && currentDrawer === username;
 
-  // Animated sketch header
+  const isDrawer =
+    gameStarted && currentDrawer != null && currentDrawer === username;
+
   const headerRef = useRef(null);
   const headerCanvasRef = useRef(null);
   const headerAnimRef = useRef();
-  const [headerDimensions, setHeaderDimensions] = useState({ width: 0, height: 0 });
+  const [headerDimensions, setHeaderDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
 
-  // Animated sketch player list
   const playersRef = useRef(null);
   const playersCanvasRef = useRef(null);
   const playersAnimRef = useRef();
-  const [playersDimensions, setPlayersDimensions] = useState({ width: 0, height: 0 });
+  const [playersDimensions, setPlayersDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
 
-  // Animated sketch buttons
   const buttonsRef = useRef(null);
   const buttonsCanvasRef = useRef(null);
   const buttonsAnimRef = useRef();
-  const [buttonsDimensions, setButtonsDimensions] = useState({ width: 0, height: 0 });
+  const [buttonsDimensions, setButtonsDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
 
   useEffect(() => {
     if (!headerRef.current) return;
@@ -95,12 +104,18 @@ const Room = () => {
         lastDrawTime = currentTime - (elapsed % fpsInterval);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        rc.rectangle(5, 5, headerDimensions.width - 10, headerDimensions.height - 10, {
-          roughness: 0.8 ,
-          stroke: "#333",
-          strokeWidth: 1.7,
-          fill: "transparent",
-        });
+        rc.rectangle(
+          5,
+          5,
+          headerDimensions.width - 8,
+          headerDimensions.height - 7,
+          {
+            roughness: 0.4,
+            stroke: "#333",
+            strokeWidth: 1.7,
+            fill: "transparent",
+          },
+        );
       }
     };
 
@@ -134,12 +149,18 @@ const Room = () => {
         lastDrawTime = currentTime - (elapsed % fpsInterval);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        rc.rectangle(5, 5, playersDimensions.width - 10, playersDimensions.height - 10, {
-          roughness: 0.8,
-          stroke: "#333",
-          strokeWidth: 1.7,
-          fill: "transparent",
-        });
+        rc.rectangle(
+          5,
+          5,
+          playersDimensions.width - 10,
+          playersDimensions.height - 10,
+          {
+            roughness: 0.8,
+            stroke: "#333",
+            strokeWidth: 1.7,
+            fill: "transparent",
+          },
+        );
       }
     };
 
@@ -173,12 +194,18 @@ const Room = () => {
         lastDrawTime = currentTime - (elapsed % fpsInterval);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        rc.rectangle(5, 5, buttonsDimensions.width - 10, buttonsDimensions.height - 10, {
-          roughness: 0.8,
-          stroke: "#333",
-          strokeWidth: 1.7,
-          fill: "transparent",
-        });
+        rc.rectangle(
+          5,
+          5,
+          buttonsDimensions.width - 10,
+          buttonsDimensions.height - 10,
+          {
+            roughness: 0.7,
+            stroke: "#333",
+            strokeWidth: 1.7,
+            fill: "transparent",
+          },
+        );
       }
     };
 
@@ -200,8 +227,16 @@ const Room = () => {
       setCurrentRound(data.roundNumber);
       setCurrentDrawer(null);
       setRoundTimer(null);
-      setRoundTransition({ roundNumber: data.roundNumber, word: null, reason: "RECONNECTED" });
-      logger(CONFIG.fileName, "handleRoundStateReceived", `Reconnected between rounds (last completed: ${data.roundNumber})`);
+      setRoundTransition({
+        roundNumber: data.roundNumber,
+        word: null,
+        reason: "RECONNECTED",
+      });
+      logger(
+        CONFIG.fileName,
+        "handleRoundStateReceived",
+        `Reconnected between rounds (last completed: ${data.roundNumber})`,
+      );
       return;
     }
 
@@ -216,7 +251,11 @@ const Room = () => {
     if (remaining > 0) {
       setRoundTimer(Date.now() + remaining * 1000);
     }
-    logger(CONFIG.fileName, "handleRoundStateReceived", `Reconnected to round ${data.roundNumber}, drawer: ${data.drawerUsername}`);
+    logger(
+      CONFIG.fileName,
+      "handleRoundStateReceived",
+      `Reconnected to round ${data.roundNumber}, drawer: ${data.drawerUsername}`,
+    );
   };
 
   const handleGameError = (data) => {
@@ -242,8 +281,8 @@ const Room = () => {
         data.username,
       );
       const playerJoinedChatMessage = {
-          text:  data.username + CONFIG.messages.playerJoinedMessage,
-          isSystem: true
+        text: data.username + CONFIG.messages.playerJoinedMessage,
+        isSystem: true,
       };
       setMessages((prevMessages) => [...prevMessages, playerJoinedChatMessage]);
       showSuccessToast(data.username + CONFIG.messages.playerJoinedMessage);
@@ -255,14 +294,15 @@ const Room = () => {
         data.username,
       );
       setDisconnectedPlayers((prev) => new Set([...prev, data.username]));
-      showErrorToast(
-        data.username + CONFIG.messages.playerDisconnectedMessage,
-      );
+      showErrorToast(data.username + CONFIG.messages.playerDisconnectedMessage);
       const playerDisconnectedChatMessage = {
-          text:  data.username + CONFIG.messages.playerDisconnectedMessage,
-          isSystem: true
+        text: data.username + CONFIG.messages.playerDisconnectedMessage,
+        isSystem: true,
       };
-      setMessages((prevMessages) => [...prevMessages, playerDisconnectedChatMessage]);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        playerDisconnectedChatMessage,
+      ]);
       const endTime = Date.now() + data.gracePeriod * 1000;
       setReconnectionTimers((prev) => ({
         ...prev,
@@ -297,7 +337,6 @@ const Room = () => {
       showSuccessToast(
         data.username + CONFIG.messages.playerReconnectedMessage,
       );
-
     } else if (data.type === CONFIG.roomStatus.PLAYER_LEFT) {
       logger(
         CONFIG.fileName,
@@ -311,9 +350,9 @@ const Room = () => {
         newSet.delete(data.username);
         return newSet;
       });
-       const playerLeftChatMessage = {
-          text:  data.username + CONFIG.messages.playerLeftMessage,
-          isSystem: true
+      const playerLeftChatMessage = {
+        text: data.username + CONFIG.messages.playerLeftMessage,
+        isSystem: true,
       };
       setMessages((prevMessages) => [...prevMessages, playerLeftChatMessage]);
       setReconnectionTimers((prev) => {
@@ -330,12 +369,10 @@ const Room = () => {
         data.newHost + CONFIG.messages.playerHostChangeMessage,
         data.newHost,
       );
-      showSuccessToast(
-      data.newHost + CONFIG.messages.playerHostChangeMessage,
-      );
+      showSuccessToast(data.newHost + CONFIG.messages.playerHostChangeMessage);
       const hostChangedChatMessage = {
-          text:  data.newHost + CONFIG.messages.playerHostChangeMessage,
-          isSystem: true
+        text: data.newHost + CONFIG.messages.playerHostChangeMessage,
+        isSystem: true,
       };
       setMessages((prevMessages) => [...prevMessages, hostChangedChatMessage]);
       if (data.newHost === username) {
@@ -351,9 +388,9 @@ const Room = () => {
         CONFIG.messages.gameStartedMessage,
       );
 
-       const gameStartedChatMessage = {
-          text:  CONFIG.messages.gameStartedMessage,
-          isSystem: true
+      const gameStartedChatMessage = {
+        text: CONFIG.messages.gameStartedMessage,
+        isSystem: true,
       };
       setMessages((prevMessages) => [...prevMessages, gameStartedChatMessage]);
 
@@ -377,10 +414,13 @@ const Room = () => {
       });
 
       const playerReconnectedChatMessage = {
-          text:  data.username + CONFIG.messages.playerReconnectedSessionMessage,
-          isSystem: true
+        text: data.username + CONFIG.messages.playerReconnectedSessionMessage,
+        isSystem: true,
       };
-      setMessages((prevMessages) => [...prevMessages, playerReconnectedChatMessage]);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        playerReconnectedChatMessage,
+      ]);
       showSuccessToast(
         `${data.username} ${CONFIG.messages.playerReconnectedSessionMessage}`,
       );
@@ -392,10 +432,13 @@ const Room = () => {
         data.username,
       );
       const playerLeftSessionChatMessage = {
-          text:  data.username + CONFIG.messages.playerLeftSessionMessage,
-          isSystem: true
+        text: data.username + CONFIG.messages.playerLeftSessionMessage,
+        isSystem: true,
       };
-      setMessages((prevMessages) => [...prevMessages, playerLeftSessionChatMessage]);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        playerLeftSessionChatMessage,
+      ]);
       showSuccessToast(
         data.username + CONFIG.messages.playerLeftSessionMessage,
       );
@@ -416,10 +459,13 @@ const Room = () => {
         [data.username]: gameEndTime,
       }));
       const playerDisconnectedSessionChatMessage = {
-          text:  data.username + CONFIG.messages.playerLeftSessionMessage,
-          isSystem: true
+        text: data.username + CONFIG.messages.playerLeftSessionMessage,
+        isSystem: true,
       };
-      setMessages((prevMessages) => [...prevMessages, playerDisconnectedSessionChatMessage]);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        playerDisconnectedSessionChatMessage,
+      ]);
       setTimeout(() => {
         setReconnectionTimers((prev) => {
           const newTimers = { ...prev };
@@ -428,7 +474,7 @@ const Room = () => {
         });
       }, data.gracePeriod * 1000);
 
-    // --- Round-related message types ---
+      // --- Round-related message types ---
     } else if (data.type === CONFIG.roomStatus.ROUND_STARTED) {
       setCurrentRound(data.roundNumber);
       setTotalRounds(data.totalRounds);
@@ -436,7 +482,9 @@ const Room = () => {
       setWordLength(data.wordLength);
       setCurrentWord(null);
       setRoundTransition(null);
-      setRoundTimer(data.durationSeconds ? Date.now() + data.durationSeconds * 1000 : null);
+      setRoundTimer(
+        data.durationSeconds ? Date.now() + data.durationSeconds * 1000 : null,
+      );
       setCorrectGuessers([]);
       setTotalGuessers(data.players ? data.players.length - 1 : 0);
       if (data.players) {
@@ -444,11 +492,12 @@ const Room = () => {
       }
       const roundStartedMsg = {
         text: `Round ${data.roundNumber}! ${data.drawerUsername} is drawing`,
-        isSystem: true
+        isSystem: true,
       };
       setMessages((prev) => [...prev, roundStartedMsg]);
-      showSuccessToast(`Round ${data.roundNumber} - ${data.drawerUsername} is drawing`);
-
+      showSuccessToast(
+        `Round ${data.roundNumber} - ${data.drawerUsername} is drawing`,
+      );
     } else if (data.type === CONFIG.roomStatus.ROUND_ENDED) {
       setRoundTimer(null);
       setCurrentWord(null);
@@ -457,29 +506,29 @@ const Room = () => {
       setRoundTransition({
         word: data.word,
         reason: data.reason,
-        roundNumber: data.roundNumber
+        roundNumber: data.roundNumber,
       });
       const roundEndedMsg = {
         text: `Round ${data.roundNumber} ended! The word was: ${data.word}`,
-        isSystem: true
+        isSystem: true,
       };
       setMessages((prev) => [...prev, roundEndedMsg]);
-
     } else if (data.type === CONFIG.roomStatus.CORRECT_GUESS) {
-      setCorrectGuessers(prev => [...prev, data.username]);
-      setScores(prev => prev.map(s =>
-        s.username === data.username
-          ? { ...s, score: (s.score || 0) + data.score }
-          : s
-      ));
+      setCorrectGuessers((prev) => [...prev, data.username]);
+      setScores((prev) =>
+        prev.map((s) =>
+          s.username === data.username
+            ? { ...s, score: (s.score || 0) + data.score }
+            : s,
+        ),
+      );
       const correctMsg = {
         text: `${data.username} guessed correctly! (+${data.score} points)`,
         isSystem: true,
-        isCorrectGuess: true
+        isCorrectGuess: true,
       };
       setMessages((prev) => [...prev, correctMsg]);
       showSuccessToast(`${data.username} guessed correctly!`);
-
     } else if (data.type === CONFIG.roomStatus.CHAT_MESSAGE) {
       const chatMsg = {
         text: data.message,
@@ -487,7 +536,6 @@ const Room = () => {
         isMe: data.username === username,
       };
       setMessages((prev) => [...prev, chatMsg]);
-
     } else if (data.type === CONFIG.roomStatus.ALL_ROUNDS_COMPLETE) {
       setScores(data.finalScores || []);
       setRoundTimer(null);
@@ -503,13 +551,12 @@ const Room = () => {
       });
       const gameOverMsg = {
         text: `Game over! Winner: ${data.winner || "No winner"}`,
-        isSystem: true
+        isSystem: true,
       };
       setMessages((prev) => [...prev, gameOverMsg]);
       showSuccessToast(`Game over! Winner: ${data.winner}`);
       webSocketService.disconnect();
       setWsConnected(false);
-
     } else if (data.type === CONFIG.roomStatus.GAME_ENDED) {
       webSocketService.disconnect();
       setWsConnected(false);
@@ -534,25 +581,42 @@ const Room = () => {
         data.winner,
       );
       const gameEndedChatMessage = {
-          text: data.winner ? `Game ended! Winner: ${data.winner}` : `Game ended!`,
-          isSystem: true
+        text: data.winner
+          ? `Game ended! Winner: ${data.winner}`
+          : `Game ended!`,
+        isSystem: true,
       };
       setMessages((prevMessages) => [...prevMessages, gameEndedChatMessage]);
-      showErrorToast(data.winner ? `Game ended! Winner: ${data.winner}` : 'Game ended!')
+      showErrorToast(
+        data.winner ? `Game ended! Winner: ${data.winner}` : "Game ended!",
+      );
     } else {
-      logger(CONFIG.fileName, CONFIG.methods.handleRoomUpdate, `Unhandled message type: ${data.type}`, data);
+      logger(
+        CONFIG.fileName,
+        CONFIG.methods.handleRoomUpdate,
+        `Unhandled message type: ${data.type}`,
+        data,
+      );
     }
   };
 
-  const handleWebSocketError = useCallback((errorData) => {
-    showErrorToast(`Error connecting to websocket !`)
-    logger(CONFIG.fileName, CONFIG.methods.handleWebSocketError,"WS Error", errorData);
-    setTimeout(() => {
-      webSocketService.disconnect();
-      setWsConnected(false);
-      navigate("/")
-    })
-  }, [navigate, showErrorToast])
+  const handleWebSocketError = useCallback(
+    (errorData) => {
+      showErrorToast(`Error connecting to websocket !`);
+      logger(
+        CONFIG.fileName,
+        CONFIG.methods.handleWebSocketError,
+        "WS Error",
+        errorData,
+      );
+      setTimeout(() => {
+        webSocketService.disconnect();
+        setWsConnected(false);
+        navigate("/");
+      });
+    },
+    [navigate, showErrorToast],
+  );
 
   const handleLeave = () => {
     webSocketService.disconnect();
@@ -586,8 +650,8 @@ const Room = () => {
     const init = async () => {
       try {
         const response = await getRoomDetails(roomCode);
-        console.log("RESPONSE - > ")
-        console.log(response)
+        console.log("RESPONSE - > ");
+        console.log(response);
 
         if (!response || !response.success) {
           navigate("/404");
@@ -661,254 +725,304 @@ const Room = () => {
     if (gameStarted) {
       webSocketService.sendGuess(roomCode, text);
     } else {
-      webSocketService.sendChat(roomCode, text);
+      const userMessage = {
+        text: text,
+        isMe: true,
+      };
+      setMessages((prevMessages) => [...prevMessages, userMessage]);
     }
   };
 
   const getPlayerScore = (playerUsername) => {
-    const scoreEntry = scores.find(s => s.username === playerUsername);
+    const scoreEntry = scores.find((s) => s.username === playerUsername);
     return scoreEntry ? scoreEntry.score : 0;
   };
 
   return (
-  <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden">
 
-    {/* ── HEADER BAR ── */}
-    <div ref={headerRef} className="shrink-0 relative font-gloria">
-      <canvas
-        ref={headerCanvasRef}
-        width={headerDimensions.width}
-        height={headerDimensions.height}
-        className="absolute inset-0 -z-10"
-      />
-      <div className="flex items-center justify-between px-4 py-2">
-        {/* Left: Room code + connection */}
-        <div className="flex items-center gap-3">
-          <span className="text-lg font-bold">{`Room: ${roomCode}`}</span>
-          <div className="flex items-center gap-1.5">
-            <div className={`h-2.5 w-2.5 rounded-full ${wsConnected ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
-            <span className="text-xs text-gray-500">{wsConnected ? "Connected" : "Disconnected"}</span>
-          </div>
-          {gameStarted && !isGameEnded && <span className="text-xs text-green-600 font-bold">LIVE</span>}
-          {isGameEnded && <span className="text-xs text-red-600 font-bold">ENDED</span>}
-        </div>
+      <div ref={headerRef} className="shrink-0 relative font-gloria">
+        <canvas
+          ref={headerCanvasRef}
+          width={headerDimensions.width}
+          height={headerDimensions.height}
+          className="absolute inset-0 -z-10"
+        />
+        <div className="flex items-center justify-between px-4 py-2">
 
-        {/* Center: Round info (only during active game) */}
-        {gameStarted && currentRound && !isGameEnded && (
-          <div className="flex items-center gap-3 text-sm">
-            {/* Round dots */}
-            {totalRounds > 0 && (
-              <div className="flex gap-1">
-                {Array.from({ length: totalRounds }, (_, i) => (
-                  <div key={i} className={`w-2 h-2 rounded-full ${
-                    i + 1 < currentRound ? 'bg-green-500'
-                    : i + 1 === currentRound ? 'bg-blue-500 ring-1 ring-blue-200'
-                    : 'bg-gray-300'
-                  }`} />
-                ))}
-              </div>
+          <div className="flex items-center gap-2 mr-3">
+            <span className="text-sm sm:text-lg font-bold">{`Room: ${roomCode}`}</span>
+            <div className="flex items-center gap-1.5">
+              <div
+                className={`h-2.5 w-2.5 hidden sm:block rounded-full ${wsConnected ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
+              />
+              <span className="text-xs hidden sm:block text-gray-500">
+                {wsConnected ? "Connected" : "Disconnected"}
+              </span>
+            </div>
+            {gameStarted && !isGameEnded && (
+              <span className="text-xs hidden sm:block  text-green-600 font-bold">
+                LIVE
+              </span>
             )}
-            <span className="font-bold">Round {currentRound}{totalRounds ? `/${totalRounds}` : ''}</span>
-            <span className="text-gray-500">|</span>
-            <span className="text-gray-700">
-              {currentDrawer} is drawing
-              {isDrawer && <span className="text-blue-600 font-bold"> (You!)</span>}
-            </span>
-            {/* Guess progress */}
-            {totalGuessers > 0 && (
-              <>
-                <span className="text-gray-500">|</span>
-                <span className="text-gray-500">{correctGuessers.length}/{totalGuessers} guessed</span>
-              </>
+            {isGameEnded && (
+              <span className="text-xs text-red-600 font-bold">ENDED</span>
             )}
           </div>
-        )}
 
-        {/* Right: Timer */}
-        <div className="flex items-center gap-2">
-          {roundTimer && <CountdownTimer endTime={roundTimer} />}
-        </div>
-      </div>
-    </div>
-
-    {/* ── MAIN CONTENT ── */}
-    <div className="flex-1 flex overflow-hidden">
-
-      {/* LEFT: Whiteboard / Lobby / Transition / Game Over */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
-
-        {/* Lobby (pre-game) */}
-        {!gameStarted && !isGameEnded && (
-          <div className="flex flex-col items-center gap-4 font-gloria">
-            <span className="text-3xl font-bold">Waiting for players...</span>
-            <span className="text-gray-500 text-sm">Players: {players.length}</span>
-          </div>
-        )}
-
-        {/* Active round — Whiteboard */}
-        {gameStarted && currentRound && !isGameEnded && !roundTransition && (
-          <div className="w-full h-full flex flex-col items-center overflow-hidden">
-            {/* Word display above whiteboard */}
-            <div className="shrink-0 py-2 font-gloria text-center">
-              {isDrawer && currentWord && (
-                <div className="relative inline-block px-6 py-2">
-                  <span className="relative z-10 text-green-700 text-xl font-bold">Your word is: {currentWord}</span>
-                  <div
-                    className="absolute inset-0 -z-10 border-2 border-black"
-                    style={{ borderRadius: "255px 15px 225px 15px/15px 225px 15px 255px" }}
-                  />
-                </div>
-              )}
-              {!isDrawer && wordLength > 0 && (
-                <div className="relative inline-block px-6 py-2">
-                  <span className="relative z-10 text-gray-700 text-xl font-bold">
-                    Guess the word! ({wordLength} letters)
+          {/* Center: Round info (only during active game) */}
+          {gameStarted && currentRound && !isGameEnded && (
+            <div className="flex items-center gap-3 text-sm">
+              <span className="font-bold">
+                Round {currentRound}
+                {totalRounds ? `/${totalRounds}` : ""}
+              </span>
+              <span className="text-gray-500">|</span>
+              <span className="text-gray-700">
+                <span className="text-black font-bold">{currentDrawer}</span> is
+                drawing
+                {isDrawer && (
+                  <span className="text-blue-600 font-bold"> (You)</span>
+                )}
+              </span>
+              {/* Guess progress */}
+              {totalGuessers > 0 && (
+                <>
+                  <span className="text-gray-500">|</span>
+                  <span className="text-gray-500">
+                    {correctGuessers.length}/{totalGuessers} guessed
                   </span>
-                  <div
-                    className="absolute inset-0 -z-10 border-2 border-black"
-                    style={{ borderRadius: "255px 15px 225px 15px/15px 225px 15px 255px" }}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Right: Timer */}
+          <div className="flex items-center gap-2">
+            {roundTimer && <CountdownTimer endTime={roundTimer} />}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col overflow-x-hidden sm:flex-row sm:overflow-hidden">
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          {!gameStarted && !isGameEnded && (
+            <div className="flex flex-col items-center gap-4 font-gloria">
+              <span className="text-2xl md:text-4xl font-bold flex items-center gap-2 whitespace-nowrap">
+                Room : {roomCode}
+                <SketchClipboard roomCode={roomCode} height={32} width={32} />
+              </span>
+
+              <span className="text-xl md:text-2xl font-bold">
+                Waiting for players...
+              </span>
+              <span className="text-gray-500 text-sm">
+                Players: {players.length}
+              </span>
+            </div>
+          )}
+
+          {gameStarted && currentRound && !isGameEnded && !roundTransition && (
+            <div className="w-full flex flex-col items-center overflow-hidden">
+              <div className="shrink-0 py-2 font-gloria text-center">
+                {isDrawer && currentWord && (
+                  <div className="relative inline-block px-6 py-2">
+                    <span className="relative z-10 text-green-700 text-xl font-bold">
+                      Your word is: {currentWord}
+                    </span>
+                    <div
+                      className="absolute inset-0 -z-10 border-2 border-black"
+                      style={{
+                        borderRadius:
+                          "255px 15px 225px 15px/15px 225px 15px 255px",
+                      }}
+                    />
+                  </div>
+                )}
+                {!isDrawer && wordLength > 0 && (
+                  <div className="relative inline-block px-6 py-2">
+                    <span className="relative z-10 text-gray-700 text-xl font-bold">
+                      Guess the word! ({wordLength} letters)
+                    </span>
+                    <div
+                      className="absolute inset-0 -z-10 border-2 border-black"
+                      style={{
+                        borderRadius:
+                          "255px 15px 225px 15px/15px 225px 15px 255px",
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 w-full flex flex-row items-center justify-center overflow-hidden mt-3 px-4 gap-2">
+              
+                  <Whiteboard roomCode={roomCode} isDrawer={isDrawer} />
+               
+              </div>
+            </div>
+          )}
+
+          {roundTransition && !isGameEnded && !gameOverData && (
+            <div className="w-full max-w-md text-center font-gloria p-4 bg-yellow-50 border-2 border-black/20 rounded-lg">
+              {roundTransition.word ? (
+                <>
+                  <div className="text-lg">
+                    Round {roundTransition.roundNumber} ended!
+                  </div>
+                  <div className="text-xl font-bold mt-1">
+                    The word was: {roundTransition.word}
+                  </div>
+                </>
+              ) : (
+                <div className="text-lg">Waiting for next round...</div>
+              )}
+              <div className="text-sm text-gray-500 mt-1">
+                Next round starting soon...
+              </div>
+            </div>
+          )}
+
+          {/* Game Over Scoreboard */}
+          {gameOverData && <SketchLeaderboard />}
+        </div>
+
+        {/* RIGHT SIDEBAR: Players + Chat + Buttons */}
+        <div className="w-full sm:w-80 shrink-0 flex flex-col">
+          {/* Players list */}
+          <div ref={playersRef} className="shrink-0 relative max-h-[200px]">
+            <canvas
+              ref={playersCanvasRef}
+              width={playersDimensions.width}
+              height={playersDimensions.height}
+              className="absolute inset-0 -z-10"
+            />
+            <div className="p-3 overflow-y-auto max-h-[200px]">
+              <h2 className="font-gloria text-sm font-bold mb-2 text-gray-600">
+                Players ({players.length})
+              </h2>
+              <ul className="flex flex-col gap-1">
+                {players.length > 0 ? (
+                  players.map((player) => {
+                    const playerUsername = player.username || player;
+                    const isCurrentUser = playerUsername === username;
+                    const isPlayerHost = player.isHost;
+                    const isDisconnected =
+                      disconnectedPlayers.has(playerUsername);
+                    const timerEndTime = reconnectionTimers[playerUsername];
+                    const isPlayerDrawing =
+                      gameStarted && currentDrawer === playerUsername;
+
+                    return (
+                      <li
+                        key={player.userId || playerUsername}
+                        className={`font-gloria text-sm px-2 py-1 rounded flex items-center justify-between ${
+                          isPlayerDrawing
+                            ? "bg-green-50/50 border border-green-300"
+                            : "hover:bg-gray-10"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1 min-w-0">
+                          <span
+                            className={`truncate ${isDisconnected ? "line-through text-gray-600" : ""}`}
+                          >
+                            {playerUsername}
+                          </span>
+                          {isCurrentUser && (
+                            <span className="text-blue-500 text-xs">(You)</span>
+                          )}
+                          {isPlayerHost && (
+                            <span className="text-green-700 text-xs">
+                              (Host)
+                            </span>
+                          )}
+                          {isPlayerDrawing && (
+                            <span className="text-black text-xs font-bold">
+                              Drawing
+                            </span>
+                          )}
+                          {gameStarted &&
+                            currentRound &&
+                            correctGuessers.includes(playerUsername) && (
+                              <span className="text-green-500 text-xs font-bold">
+                                Guessed!
+                              </span>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {gameStarted && (
+                            <span className="text-xs text-gray-500">
+                              {getPlayerScore(playerUsername)}pts
+                            </span>
+                          )}
+                          {isDisconnected && (
+                            <span className="text-red-500 text-xs font-bold">
+                              DC{" "}
+                              {timerEndTime && (
+                                <CountdownTimer endTime={timerEndTime} />
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })
+                ) : (
+                  <li className="font-gloria text-gray-400 text-sm italic">
+                    No players yet
+                  </li>
+                )}
+              </ul>
+            </div>
+          </div>
+
+          {/* Chat (fills remaining space) */}
+          <div className="flex-1 overflow-hidden">
+            <SketchChatBox
+              messages={messages}
+              onSend={handleChatSendMessage}
+              maxWidth="100%"
+              maxHeight="100%"
+              gameStarted={gameStarted}
+              isDrawer={isDrawer}
+              disabled={gameStarted && isDrawer}
+            />
+          </div>
+
+          {/* Buttons */}
+          <div ref={buttonsRef} className="shrink-0 relative">
+            <canvas
+              ref={buttonsCanvasRef}
+              width={buttonsDimensions.width}
+              height={buttonsDimensions.height}
+              className="absolute inset-0 -z-10"
+            />
+            <div className="p-3 flex gap-2">
+              {!isGameEnded && !gameStarted && isHost && (
+                <div className="flex-1">
+                  <SketchButton
+                    text={CONFIG.ui.startGameButton.startGameButtonText}
+                    color={CONFIG.ui.startGameButton.startGameButtonColor}
+                    onClick={handleStartGame}
                   />
                 </div>
               )}
-            </div>
-            <div className="flex-1 w-full flex items-center justify-center overflow-hidden mt-3">
-              <Whiteboard roomCode={roomCode} isDrawer={isDrawer} />
-            </div>
-          </div>
-        )}
-
-        {/* Round Transition */}
-        {roundTransition && !isGameEnded && !gameOverData && (
-          <div className="w-full max-w-md text-center font-gloria p-4 bg-yellow-50 border-2 border-black/20 rounded-lg">
-            {roundTransition.word ? (
-              <>
-                <div className="text-lg">Round {roundTransition.roundNumber} ended!</div>
-                <div className="text-xl font-bold mt-1">The word was: {roundTransition.word}</div>
-              </>
-            ) : (
-              <div className="text-lg">Waiting for next round...</div>
-            )}
-            <div className="text-sm text-gray-500 mt-1">Next round starting soon...</div>
-          </div>
-        )}
-
-        {/* Game Over Scoreboard */}
-        {gameOverData && (
-          <SketchLeaderboard
-            finalScores={gameOverData.finalScores}
-            winner={gameOverData.winner}
-            onHome={() => navigate("/")}
-          />
-        )}
-      </div>
-
-      {/* RIGHT SIDEBAR: Players + Chat + Buttons */}
-      <div className="w-80 shrink-0 flex flex-col border-l border-black/10">
-
-        {/* Players list */}
-        <div ref={playersRef} className="shrink-0 relative max-h-[200px]">
-          <canvas
-            ref={playersCanvasRef}
-            width={playersDimensions.width}
-            height={playersDimensions.height}
-            className="absolute inset-0 -z-10"
-          />
-          <div className="p-3 overflow-y-auto max-h-[200px]">
-          <h2 className="font-gloria text-sm font-bold mb-2 text-gray-600">
-            Players ({players.length})
-          </h2>
-          <ul className="flex flex-col gap-1">
-            {players.length > 0 ? (
-              players.map((player) => {
-                const playerUsername = player.username || player;
-                const isCurrentUser = playerUsername === username;
-                const isPlayerHost = player.isHost;
-                const isDisconnected = disconnectedPlayers.has(playerUsername);
-                const timerEndTime = reconnectionTimers[playerUsername];
-                const isPlayerDrawing = gameStarted && currentDrawer === playerUsername;
-
-                return (
-                  <li
-                    key={playerUsername}
-                    className={`font-gloria text-sm px-2 py-1 rounded flex items-center justify-between ${
-                      isPlayerDrawing ? 'bg-green-50 border border-green-300' : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1 min-w-0">
-                      <span className={`truncate ${isDisconnected ? 'line-through text-gray-400' : ''}`}>
-                        {playerUsername}
-                      </span>
-                      {isCurrentUser && <span className="text-blue-500 text-xs">(You)</span>}
-                      {isPlayerHost && <span className="text-green-700 text-xs">(Host)</span>}
-                      {isPlayerDrawing && <span className="text-purple-600 text-xs font-bold">Drawing</span>}
-                      {gameStarted && currentRound && correctGuessers.includes(playerUsername) && (
-                        <span className="text-green-500 text-xs font-bold">Guessed!</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {gameStarted && (
-                        <span className="text-xs text-gray-500">{getPlayerScore(playerUsername)}pts</span>
-                      )}
-                      {isDisconnected && (
-                        <span className="text-red-500 text-xs font-bold">
-                          DC {timerEndTime && <CountdownTimer endTime={timerEndTime}/>}
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                );
-              })
-            ) : (
-              <li className="font-gloria text-gray-400 text-sm italic">No players yet</li>
-            )}
-          </ul>
-          </div>
-        </div>
-
-        {/* Chat (fills remaining space) */}
-        <div className="flex-1 overflow-hidden">
-          <SketchChatBox
-            messages={messages}
-            onSend={handleChatSendMessage}
-            maxWidth="100%"
-            maxHeight="100%"
-            gameStarted={gameStarted}
-            isDrawer={isDrawer}
-            disabled={gameStarted && isDrawer}
-          />
-        </div>
-
-        {/* Buttons */}
-        <div ref={buttonsRef} className="shrink-0 relative">
-          <canvas
-            ref={buttonsCanvasRef}
-            width={buttonsDimensions.width}
-            height={buttonsDimensions.height}
-            className="absolute inset-0 -z-10"
-          />
-          <div className="p-3 flex gap-2">
-            {!isGameEnded && !gameStarted && isHost && (
-              <div className="flex-1">
+              <div
+                className={
+                  !isGameEnded && !gameStarted && isHost ? "flex-1" : "w-full"
+                }
+              >
                 <SketchButton
-                  text={CONFIG.ui.startGameButton.startGameButtonText}
-                  color={CONFIG.ui.startGameButton.startGameButtonColor}
-                  onClick={handleStartGame}
+                  text={CONFIG.ui.leaveButton.leaveButtonText}
+                  color={CONFIG.ui.leaveButton.leaveButtonColor}
+                  onClick={handleLeave}
                 />
               </div>
-            )}
-            <div className={!isGameEnded && !gameStarted && isHost ? "flex-1" : "w-full"}>
-              <SketchButton
-                text={CONFIG.ui.leaveButton.leaveButtonText}
-                color={CONFIG.ui.leaveButton.leaveButtonColor}
-                onClick={handleLeave}
-              />
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
 };
 
 export default Room;

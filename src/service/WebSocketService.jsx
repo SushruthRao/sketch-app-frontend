@@ -2,6 +2,7 @@ import React from 'react'
 import {Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 
+const WS_URL = import.meta.env.VITE_WS_URL;
 
 class WebSocketService {
     constructor() {
@@ -19,13 +20,14 @@ class WebSocketService {
         }
         this.client = new Client(
             {
-                webSocketFactory : () => new SockJS("http://localhost:8080/ws"),
+                webSocketFactory : () => new SockJS(WS_URL),
                 connectHeaders : {
                     Authorization : `Bearer ${token}`
                 },
                 debug : (str) => console.log("STOMP: ", str),
                 onConnect : () => {
                     this.connected = true;
+                    this.notify('connectionStatus', true); 
                     this.subscribeToErrors();
                     this.subscribeToWord();
                     this.subscribeToRoundState();
@@ -72,7 +74,7 @@ class WebSocketService {
                     this.notify('error', data);
                 }
             } catch(e) {
-                this.notify('error', message);
+                this.notify('error', e);
             }
         })
     }
@@ -129,7 +131,7 @@ class WebSocketService {
     }
 
     subscribeToDraw(roomCode, callback) {
-        if (!this.connected || !this.client) {
+        if (!this.connected) {
             console.error("subscribeToDraw: not connected to ws");
             return null;
         }
@@ -137,7 +139,7 @@ class WebSocketService {
             const data = JSON.parse(message.body);
             callback(data);
         });
-        console.log(`Direct draw subscription created for room ${roomCode}`);
+        console.log(`Subscribed to draw for room ${roomCode}`);
         return subscription;
     }
 
@@ -192,19 +194,6 @@ class WebSocketService {
             body : JSON.stringify({})
         });
         console.log(`Sent startGame client message for ${roomCode}`)
-    }
-
-    sendChat(roomCode, message)
-    {
-        if(!this.connected)
-        {
-            console.log("error in websocketservice - not connected")
-            return;
-        }
-        this.client.publish({
-            destination : `/app/room/${roomCode}/chat`,
-            body : JSON.stringify({ message: message })
-        });
     }
 
     sendGuess(roomCode, message)
