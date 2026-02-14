@@ -91,7 +91,7 @@ const SketchButton = ({
   }, [dimensions, color, stroke, strokeWidth, text, fps, isHovered, isLoading]);
 
   return (
-    <button 
+    <div 
       ref={containerRef} 
       className="relative w-full h-16 cursor-pointer active:scale-95 transition-all duration-200"
       onClick={onClick}
@@ -104,7 +104,7 @@ const SketchButton = ({
         height={dimensions.height} 
         className="block w-full h-full"
       />
-    </button>
+    </div>
   );
 };
 
