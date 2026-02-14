@@ -66,7 +66,6 @@ const Login = () => {
         <SketchButton
           text={CONFIG.ui.loginButton.loginButtonText}
           color={CONFIG.ui.loginButton.loginButtonColor}
-          onClick={handleSubmit}
           isLoading={loading}
         />
 
