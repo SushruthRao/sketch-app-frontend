@@ -5,9 +5,11 @@ const BackgroundCanvasFill = ({
   width = 400,
   height = 400,
   diameter = 300,
+  fps = 10,
   color = '255, 215, 0'
 }) => {
   const canvasRef = useRef(null);
+  const requestRef = useRef();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -15,24 +17,39 @@ const BackgroundCanvasFill = ({
 
     const rc = rough.canvas(canvas);
     const ctx = canvas.getContext('2d');
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
+    let lastDrawTime = performance.now();
+    const fpsInterval = 1000 / fps;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const animate = (currentTime) => {
+      requestRef.current = requestAnimationFrame(animate);
+      const elapsed = currentTime - lastDrawTime;
 
-    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, diameter / 2);
-    gradient.addColorStop(0, `rgba(${color}, 0.95)`);
-    gradient.addColorStop(0.4, `rgba(${color}, 0.5)`);
-    gradient.addColorStop(1, `rgba(${color}, 0)`);
+      if (elapsed > fpsInterval) {
+        lastDrawTime = currentTime - (elapsed % fpsInterval);
 
-    rc.circle(cx, cy, diameter, {
-      stroke: 'none',
-      fill: gradient,
-      fillStyle: 'zigzag',
-      roughness: 4,
-      zigzagOffset: 6,
-    });
-  }, [diameter, color, width, height]);
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, diameter / 2);
+        gradient.addColorStop(0, `rgba(${color}, 0.95)`);
+        gradient.addColorStop(0.4, `rgba(${color}, 0.5)`);
+        gradient.addColorStop(1, `rgba(${color}, 0)`);
+
+        rc.circle(cx, cy, diameter, {
+          stroke: 'none',
+          fill: gradient,
+          fillStyle: 'zigzag',
+          roughness: 4,
+          zigzagOffset: 6,
+        });
+      }
+    };
+
+    requestRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(requestRef.current);
+  }, [diameter, fps, color, width, height]);
 
   return (
     <canvas
