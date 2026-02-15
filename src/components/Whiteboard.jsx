@@ -291,7 +291,7 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
 
   return (
     <>
-      {isDrawer && !isLobby && (
+      {isDrawer && (
         <div className="flex-[1] h-full min-w-[80px] hidden md:flex flex-col items-center justify-center">
           <Suspense fallback={<div className="w-full h-[52%]" />}>
             <AnimatedPencilWithBackground
