@@ -16,7 +16,6 @@ import SketchChatBox from "../components/SketchChatBox";
 import SketchLeaderboard from "../components/SketchLeaderboard";
 import Whiteboard from "../components/Whiteboard";
 import SketchClipboard from "../components/SketchClipboard";
-import Scene from "../components/PencilScene";
 
 const Room = () => {
   const { roomCode } = useParams();
@@ -56,7 +55,6 @@ const Room = () => {
 
   const headerRef = useRef(null);
   const headerCanvasRef = useRef(null);
-  const headerAnimRef = useRef();
   const [headerDimensions, setHeaderDimensions] = useState({
     width: 0,
     height: 0,
@@ -64,7 +62,6 @@ const Room = () => {
 
   const playersRef = useRef(null);
   const playersCanvasRef = useRef(null);
-  const playersAnimRef = useRef();
   const [playersDimensions, setPlayersDimensions] = useState({
     width: 0,
     height: 0,
@@ -72,7 +69,6 @@ const Room = () => {
 
   const buttonsRef = useRef(null);
   const buttonsCanvasRef = useRef(null);
-  const buttonsAnimRef = useRef();
   const [buttonsDimensions, setButtonsDimensions] = useState({
     width: 0,
     height: 0,
@@ -93,34 +89,13 @@ const Room = () => {
     if (!canvas || headerDimensions.width === 0) return;
     const rc = rough.canvas(canvas);
     const ctx = canvas.getContext("2d");
-    let lastDrawTime = performance.now();
-    const fpsInterval = 1000 / 8;
-
-    const animate = (currentTime) => {
-      headerAnimRef.current = requestAnimationFrame(animate);
-      const elapsed = currentTime - lastDrawTime;
-
-      if (elapsed > fpsInterval) {
-        lastDrawTime = currentTime - (elapsed % fpsInterval);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        rc.rectangle(
-          5,
-          5,
-          headerDimensions.width - 8,
-          headerDimensions.height - 7,
-          {
-            roughness: 0.4,
-            stroke: "#333",
-            strokeWidth: 1.7,
-            fill: "transparent",
-          },
-        );
-      }
-    };
-
-    headerAnimRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(headerAnimRef.current);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    rc.rectangle(5, 5, headerDimensions.width - 8, headerDimensions.height - 7, {
+      roughness: 0.4,
+      stroke: "#333",
+      strokeWidth: 1.7,
+      fill: "transparent",
+    });
   }, [headerDimensions]);
 
   useEffect(() => {
@@ -138,34 +113,13 @@ const Room = () => {
     if (!canvas || playersDimensions.width === 0) return;
     const rc = rough.canvas(canvas);
     const ctx = canvas.getContext("2d");
-    let lastDrawTime = performance.now();
-    const fpsInterval = 1000 / 8;
-
-    const animate = (currentTime) => {
-      playersAnimRef.current = requestAnimationFrame(animate);
-      const elapsed = currentTime - lastDrawTime;
-
-      if (elapsed > fpsInterval) {
-        lastDrawTime = currentTime - (elapsed % fpsInterval);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        rc.rectangle(
-          5,
-          5,
-          playersDimensions.width - 10,
-          playersDimensions.height - 10,
-          {
-            roughness: 0.8,
-            stroke: "#333",
-            strokeWidth: 1.7,
-            fill: "transparent",
-          },
-        );
-      }
-    };
-
-    playersAnimRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(playersAnimRef.current);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    rc.rectangle(5, 5, playersDimensions.width - 10, playersDimensions.height - 10, {
+      roughness: 0.8,
+      stroke: "#333",
+      strokeWidth: 1.7,
+      fill: "transparent",
+    });
   }, [playersDimensions]);
 
   useEffect(() => {
@@ -183,34 +137,13 @@ const Room = () => {
     if (!canvas || buttonsDimensions.width === 0) return;
     const rc = rough.canvas(canvas);
     const ctx = canvas.getContext("2d");
-    let lastDrawTime = performance.now();
-    const fpsInterval = 1000 / 8;
-
-    const animate = (currentTime) => {
-      buttonsAnimRef.current = requestAnimationFrame(animate);
-      const elapsed = currentTime - lastDrawTime;
-
-      if (elapsed > fpsInterval) {
-        lastDrawTime = currentTime - (elapsed % fpsInterval);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        rc.rectangle(
-          5,
-          5,
-          buttonsDimensions.width - 10,
-          buttonsDimensions.height - 10,
-          {
-            roughness: 0.7,
-            stroke: "#333",
-            strokeWidth: 1.7,
-            fill: "transparent",
-          },
-        );
-      }
-    };
-
-    buttonsAnimRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(buttonsAnimRef.current);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    rc.rectangle(5, 5, buttonsDimensions.width - 10, buttonsDimensions.height - 10, {
+      roughness: 0.7,
+      stroke: "#333",
+      strokeWidth: 1.7,
+      fill: "transparent",
+    });
   }, [buttonsDimensions]);
 
   const handleWordReceived = (data) => {

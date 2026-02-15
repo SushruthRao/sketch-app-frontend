@@ -1,13 +1,12 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { lazy, Suspense, useRef, useState, useEffect, useCallback } from "react";
 import rough from "roughjs";
 import webSocketService from "../service/WebSocketService";
 import WhiteboardColorSelect from "./WhiteBoardColorSelect";
 import SketchSlider from "./SketchSlider";
 import { WHITEBOARD_CONFIG as CONFIG } from "../config/LabelConfig";
-import PencilScene from "./PencilScene";
-import EraserScene from "./EraserScene";
-import AnimatedPencilWithBackground from "./AnimatedPencilWithBackground";
-import AnimatedEraserWithBackground from "./AnimatedEraserWithBackground";
+
+const AnimatedPencilWithBackground = lazy(() => import("./AnimatedPencilWithBackground"));
+const AnimatedEraserWithBackground = lazy(() => import("./AnimatedEraserWithBackground"));
 
 const Whiteboard = ({ roomCode, isDrawer }) => {
   const canvasRef = useRef(null);
@@ -19,7 +18,6 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
 
   const borderRef = useRef(null);
   const borderCanvasRef = useRef(null);
-  const borderAnimRef = useRef();
   const [borderDimensions, setBorderDimensions] = useState({
     width: 0,
     height: 0,
@@ -108,40 +106,19 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
     return () => observer.disconnect();
   }, []);
 
-  // Sketch border animation
+  // Sketch border drawing
   useEffect(() => {
     const canvas = borderCanvasRef.current;
     if (!canvas || borderDimensions.width === 0) return;
     const rc = rough.canvas(canvas);
     const ctx = canvas.getContext("2d");
-    let lastDrawTime = performance.now();
-    const fpsInterval = 1000 / 8;
-
-    const animate = (currentTime) => {
-      borderAnimRef.current = requestAnimationFrame(animate);
-      const elapsed = currentTime - lastDrawTime;
-
-      if (elapsed > fpsInterval) {
-        lastDrawTime = currentTime - (elapsed % fpsInterval);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        rc.rectangle(
-          5,
-          5,
-          borderDimensions.width - 10,
-          borderDimensions.height - 10,
-          {
-            roughness: 0.8,
-            stroke: "#333",
-            strokeWidth: 1.7,
-            fill: "transparent",
-          },
-        );
-      }
-    };
-
-    borderAnimRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(borderAnimRef.current);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    rc.rectangle(5, 5, borderDimensions.width - 10, borderDimensions.height - 10, {
+      roughness: 0.8,
+      stroke: "#333",
+      strokeWidth: 1.7,
+      fill: "transparent",
+    });
   }, [borderDimensions]);
 
   useEffect(() => {
@@ -311,28 +288,25 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
     <>
       {isDrawer && (
         <div className="flex-[1] h-full min-w-[80px] hidden md:flex flex-col items-center justify-center">
-          <AnimatedPencilWithBackground
-          height="52%"
-          width="100%"
-            color={color}
-            isSelected={tool === "pen"}
-            onSelect={() => setTool("pen")}
-          />
-          
-          <AnimatedEraserWithBackground
-          height="40%"
-          width="100%"
-            color={color}
-            isSelected={tool === "eraser"}
-            onSelect={() => setTool("eraser")}
-          />
+          <Suspense fallback={<div className="w-full h-[52%]" />}>
+            <AnimatedPencilWithBackground
+              height="52%"
+              width="100%"
+              color={color}
+              isSelected={tool === "pen"}
+              onSelect={() => setTool("pen")}
+            />
+          </Suspense>
 
-          {/* <EraserScene
-            sceneHeight="50%"
-            sceneWidth="100%"
-            isSelected={tool === "eraser"}
-            onSelect={() => setTool("eraser")}
-          /> */}
+          <Suspense fallback={<div className="w-full h-[40%]" />}>
+            <AnimatedEraserWithBackground
+              height="40%"
+              width="100%"
+              color={color}
+              isSelected={tool === "eraser"}
+              onSelect={() => setTool("eraser")}
+            />
+          </Suspense>
         </div>
       )}
       <div className="flex-[4] h-full flex items-center justify-center">
