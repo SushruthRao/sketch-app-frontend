@@ -26,6 +26,7 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
   const sendBufferRef = useRef([]);
   const throttleTimerRef = useRef(null);
   const lastSentPointRef = useRef(null);
+  const lastDrawnPointRef = useRef(null);
   const isDrawerRef = useRef(isDrawer);
   const isLobbyRef = useRef(isLobby);
   const toolRef = useRef(tool);
@@ -131,7 +132,7 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
 
     const createSubscription = () => {
       subscription = webSocketService.subscribeToDraw(roomCode, (data) => {
-        if (isDrawerRef.current && !isLobbyRef.current) return;
+        if (isDrawerRef.current) return;
         if (data.type === "CANVAS_CLEAR") {
           clearCanvasLocal();
           return;
@@ -233,8 +234,8 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
     ctx.globalCompositeOperation = "source-over";
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.beginPath();
-    ctx.moveTo(coords.x, coords.y);
+
+    lastDrawnPointRef.current = coords;
 
     // Reset streaming state for new stroke
     sendBufferRef.current = [coords];
@@ -252,9 +253,13 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
     e.preventDefault();
     const coords = getCanvasCoords(e);
     const ctx = contextRef.current;
+    const prev = lastDrawnPointRef.current;
 
+    ctx.beginPath();
+    ctx.moveTo(prev.x, prev.y);
     ctx.lineTo(coords.x, coords.y);
     ctx.stroke();
+    lastDrawnPointRef.current = coords;
 
     // Buffer the point for next throttled send
     sendBufferRef.current.push(coords);
@@ -263,6 +268,7 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
   const finishDrawing = () => {
     if (!isDrawing || !isDrawer) return;
     setIsDrawing(false);
+    lastDrawnPointRef.current = null;
 
     // Stop periodic sending
     if (throttleTimerRef.current) {

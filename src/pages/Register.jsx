@@ -4,11 +4,13 @@ import { registerUser } from '../service/UserService';
 import SketchTitleComponent from '../components/SketchTitleComponent';
 import SketchInput from '../components/SketchInput';
 import SketchButton from '../components/SketchButton';
+import { useToast } from '../toast/CustomToastHook';
 import { REGISTER_CONFIG as CONFIG } from '../config/LabelConfig';
 import { logger } from '../utils/Logger';
 
 const Register = () => {
   const navigate = useNavigate();
+  const { showSuccessToast, showErrorToast } = useToast();
   const [formData, setFormData] = useState({ username: '', email: '', passwordHash: '' });
   const [status, setStatus] = useState({ type: '', message: '' });
   const [loading, setLoading] = useState(false);
@@ -30,11 +32,13 @@ const Register = () => {
 
       logger(CONFIG.fileName, CONFIG.methods.handleSubmit, CONFIG.messages.logSuccess, response);
       setStatus({ type: 'success', message: CONFIG.messages.success });
+      showSuccessToast(CONFIG.messages.success);
       setTimeout(() => navigate('/login'), 800);
     } catch (err) {
-
+      const errorMsg = err.message || CONFIG.messages.error;
       logger(CONFIG.fileName, CONFIG.methods.handleSubmit, CONFIG.messages.logFail, err.message);
-      setStatus({ type: 'error', message: CONFIG.messages.error });
+      setStatus({ type: 'error', message: errorMsg });
+      showErrorToast(errorMsg);
 
     } finally {
 

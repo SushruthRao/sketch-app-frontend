@@ -38,9 +38,10 @@ const Login = () => {
     } catch (err) {
 
       setLoading(false);
-      setError(CONFIG.messages.uiError);
+      const errorMsg = err.message || CONFIG.messages.uiError;
+      setError(errorMsg);
       logger(CONFIG.fileName, CONFIG.methods.handleSubmit, CONFIG.messages.logFail, err.message);
-      showErrorToast(CONFIG.messages.error);
+      showErrorToast(errorMsg);
 
     } finally {
       setLoading(false);
