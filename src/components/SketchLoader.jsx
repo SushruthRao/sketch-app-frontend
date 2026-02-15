@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import rough from 'roughjs';
+import paperBg from '../assets/paper_background.jpg';
 
 const SketchLoader = () => {
   const canvasRef = useRef(null);
@@ -56,12 +57,12 @@ const SketchLoader = () => {
   }, [fpsInterval]);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
+    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundImage: `url(${paperBg})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
       <canvas 
         ref={canvasRef} 
         width={250} 
         height={250} 
-        className="block"
+        className="block bg-transparent"
       />
     </div>
   );
