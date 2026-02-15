@@ -85,7 +85,7 @@ const SketchToast = ({
     const barHeight = 6;
     if (progress > 0) {
       rc.rectangle(pad + 10, canvas.height - barHeight - 15, (canvas.width - pad * 2 - 20) * progress, barHeight, {
-        roughness: 1.3,
+        roughness: 1.2,
         fill: stroke,
         fillStyle: CONFIG.default.fillStyle,
         stroke: stroke,
