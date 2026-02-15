@@ -5,7 +5,7 @@ import { handleApiRequest } from './ApiService'
 const ROOM_URL = "/api/rooms"
 
 export const createRoom = async () => {
-    return handleApiRequest("post", `${ROOM_URL}/create`, null, null)
+    return handleApiRequest("post", `${ROOM_URL}/create`, {}, null)
 }
 
 export const getRoomDetails = async (roomCode) => {

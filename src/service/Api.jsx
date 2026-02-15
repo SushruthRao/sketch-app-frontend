@@ -13,8 +13,7 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('userToken');
     if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.set('Authorization', `Bearer ${token}`);
     }
     return config;
   },
@@ -26,7 +25,8 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('userToken');
-      window.location.href = '/login';
+      localStorage.removeItem('userName');
+      window.dispatchEvent(new Event('app:logout'));
     }
     return Promise.reject(error);
   }
@@ -34,4 +34,3 @@ api.interceptors.response.use(
 
 
 export default api;
-
