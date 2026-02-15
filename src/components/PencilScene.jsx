@@ -40,8 +40,8 @@ const Pencil = ({ isSelected, onSelect }) => {
   useFrame((state) => {
     if (pencilRef.current) {
       const time = state.clock.elapsedTime;
-      pencilRef.current.rotation.x += 0.07;
-      pencilRef.current.rotation.z += 0.015;
+      pencilRef.current.rotation.x += 0.02;
+      pencilRef.current.rotation.z += 0.008;
 
       let targetScale = 0.8;
       if(isSelected) targetScale = 1;
