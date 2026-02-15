@@ -655,15 +655,7 @@ const Room = () => {
   const handleChatSendMessage = (text) => {
     if (!text.trim()) return;
     if (gameStarted && isDrawer) return;
-    if (gameStarted) {
-      webSocketService.sendGuess(roomCode, text);
-    } else {
-      const userMessage = {
-        text: text,
-        isMe: true,
-      };
-      setMessages((prevMessages) => [...prevMessages, userMessage]);
-    }
+    webSocketService.sendGuess(roomCode, text);
   };
 
   const getPlayerScore = (playerUsername) => {
@@ -740,18 +732,19 @@ const Room = () => {
       <div className="flex-1 flex flex-col overflow-x-hidden sm:flex-row sm:overflow-hidden">
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           {!gameStarted && !isGameEnded && (
-            <div className="flex flex-col items-center gap-4 font-gloria">
-              <span className="text-2xl md:text-4xl font-bold flex items-center gap-2 whitespace-nowrap">
-                Room : {roomCode}
-                <SketchClipboard roomCode={roomCode} height={32} width={32} />
-              </span>
-
-              <span className="text-xl md:text-2xl font-bold">
-                Waiting for players...
-              </span>
-              <span className="text-gray-500 text-sm">
-                Players: {players.length}
-              </span>
+            <div className="w-full flex flex-col items-center overflow-hidden">
+              <div className="shrink-0 py-2 font-gloria text-center">
+                <span className="text-xl md:text-2xl font-bold flex items-center justify-center gap-2 whitespace-nowrap">
+                  Room : {roomCode}
+                  <SketchClipboard roomCode={roomCode} height={32} width={32} />
+                </span>
+                <span className="text-gray-500 text-sm">
+                  Waiting for players... ({players.length})
+                </span>
+              </div>
+              <div className="flex-1 w-full flex flex-row items-center justify-center overflow-hidden mt-1 px-4 gap-2">
+                <Whiteboard roomCode={roomCode} isDrawer={true} isLobby={true} />
+              </div>
             </div>
           )}
 
@@ -816,7 +809,13 @@ const Room = () => {
           )}
 
           {/* Game Over Scoreboard */}
-          {gameOverData && <SketchLeaderboard />}
+          {gameOverData && (
+            <SketchLeaderboard
+              finalScores={gameOverData.finalScores}
+              winner={gameOverData.winner}
+              onHome={() => navigate("/")}
+            />
+          )}
         </div>
 
         {/* RIGHT SIDEBAR: Players + Chat + Buttons */}

@@ -8,7 +8,7 @@ import { WHITEBOARD_CONFIG as CONFIG } from "../config/LabelConfig";
 const AnimatedPencilWithBackground = lazy(() => import("./AnimatedPencilWithBackground"));
 const AnimatedEraserWithBackground = lazy(() => import("./AnimatedEraserWithBackground"));
 
-const Whiteboard = ({ roomCode, isDrawer }) => {
+const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -27,6 +27,7 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
   const throttleTimerRef = useRef(null);
   const lastSentPointRef = useRef(null);
   const isDrawerRef = useRef(isDrawer);
+  const isLobbyRef = useRef(isLobby);
   const toolRef = useRef(tool);
   const colorRef = useRef(color);
   const lineWidthRef = useRef(lineWidth);
@@ -37,6 +38,10 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
   useEffect(() => {
     isDrawerRef.current = isDrawer;
   }, [isDrawer]);
+
+  useEffect(() => {
+    isLobbyRef.current = isLobby;
+  }, [isLobby]);
 
   useEffect(() => {
     toolRef.current = tool;
@@ -126,7 +131,7 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
 
     const createSubscription = () => {
       subscription = webSocketService.subscribeToDraw(roomCode, (data) => {
-        if (isDrawerRef.current) return;
+        if (isDrawerRef.current && !isLobbyRef.current) return;
         if (data.type === "CANVAS_CLEAR") {
           clearCanvasLocal();
           return;
@@ -286,7 +291,7 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
 
   return (
     <>
-      {isDrawer && (
+      {isDrawer && !isLobby && (
         <div className="flex-[1] h-full min-w-[80px] hidden md:flex flex-col items-center justify-center">
           <Suspense fallback={<div className="w-full h-[52%]" />}>
             <AnimatedPencilWithBackground
@@ -407,12 +412,14 @@ const Whiteboard = ({ roomCode, isDrawer }) => {
               </div>
 
               {/* Clear canvas */}
-              <button
-                onClick={handleClearCanvas}
-                className="px-3 py-1 rounded border-2 border-red-300 text-red-600 hover:bg-red-50 text-sm"
-              >
-                Clear
-              </button>
+              {!isLobby && (
+                <button
+                  onClick={handleClearCanvas}
+                  className="px-3 py-1 rounded border-2 border-red-300 text-red-600 hover:bg-red-50 text-sm"
+                >
+                  Clear
+                </button>
+              )}
             </div>
           )}
         </div>
