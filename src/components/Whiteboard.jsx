@@ -1,14 +1,16 @@
-import React, { lazy, Suspense, useRef, useState, useEffect, useCallback } from "react";
+import React, { lazy, Suspense, useRef, useState, useEffect, useCallback, useContext } from "react";
 import rough from "roughjs";
 import webSocketService from "../service/WebSocketService";
 import WhiteboardColorSelect from "./WhiteBoardColorSelect";
 import SketchSlider from "./SketchSlider";
 import { WHITEBOARD_CONFIG as CONFIG } from "../config/LabelConfig";
+import AuthContext from "../auth/AuthContext";
 
 const AnimatedPencilWithBackground = lazy(() => import("./AnimatedPencilWithBackground"));
 const AnimatedEraserWithBackground = lazy(() => import("./AnimatedEraserWithBackground"));
 
 const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
+  const { username } = useContext(AuthContext);
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -132,7 +134,7 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
 
     const createSubscription = () => {
       subscription = webSocketService.subscribeToDraw(roomCode, (data) => {
-        if (isDrawerRef.current) return;
+        if (data.senderUsername === username) return;
         if (data.type === "CANVAS_CLEAR") {
           clearCanvasLocal();
           return;
@@ -160,7 +162,7 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
         subscription.unsubscribe();
       }
     };
-  }, [roomCode, clearCanvasLocal, renderStroke]);
+  }, [roomCode, username, clearCanvasLocal, renderStroke]);
 
   useEffect(() => {
     const handleCanvasState = (data) => {
