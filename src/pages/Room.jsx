@@ -25,6 +25,7 @@ const Room = () => {
   const [players, setPlayers] = useState([]);
   const [room, setRoom] = useState(null);
   const [wsConnected, setWsConnected] = useState(false);
+  const [canvasWsConnected, setCanvasWsConnected] = useState(false);
   const [roomLoading, setRoomLoading] = useState(true);
   const username = localStorage.getItem("userName");
   const token = localStorage.getItem("userToken");
@@ -495,10 +496,12 @@ const Room = () => {
       canvasWebSocketService.disconnect();
       webSocketService.disconnect();
       setWsConnected(false);
+      setCanvasWsConnected(false);
     } else if (data.type === CONFIG.roomStatus.GAME_ENDED) {
       canvasWebSocketService.disconnect();
       webSocketService.disconnect();
       setWsConnected(false);
+      setCanvasWsConnected(false);
       setGameStarted(false);
       setIsGameEnded(true);
       setSession(null);
@@ -552,6 +555,7 @@ const Room = () => {
         canvasWebSocketService.disconnect();
         webSocketService.disconnect();
         setWsConnected(false);
+      setCanvasWsConnected(false);
         navigate("/");
       });
     },
@@ -581,6 +585,17 @@ const Room = () => {
       }
     });
   }, [players]);
+
+  // Track canvas WebSocket connection status
+  useEffect(() => {
+    const handleCanvasStatus = (status) => {
+      setCanvasWsConnected(status === true);
+    };
+    canvasWebSocketService.on("connectionStatus", handleCanvasStatus);
+    return () => {
+      canvasWebSocketService.off("connectionStatus", handleCanvasStatus);
+    };
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -726,9 +741,14 @@ const Room = () => {
             <div className="flex items-center gap-1.5">
               <div
                 className={`h-2.5 w-2.5 hidden sm:block rounded-full ${wsConnected ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
+                title="Game WebSocket"
+              />
+              <div
+                className={`h-2.5 w-2.5 hidden sm:block rounded-full ${canvasWsConnected ? "bg-blue-500 animate-pulse" : "bg-red-500"}`}
+                title="Canvas WebSocket"
               />
               <span className="text-xs hidden sm:block text-gray-500">
-                {wsConnected ? "Connected" : "Disconnected"}
+                {wsConnected && canvasWsConnected ? "Connected" : wsConnected ? "Canvas DC" : "Disconnected"}
               </span>
             </div>
             {gameStarted && !isGameEnded && (
