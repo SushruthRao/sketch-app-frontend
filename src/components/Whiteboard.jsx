@@ -130,10 +130,17 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
     });
   }, [borderDimensions]);
 
+  // Subscribe to draw topic — re-subscribes on canvas WS reconnect
   useEffect(() => {
     let subscription = null;
 
     const createSubscription = () => {
+      if (subscription) {
+        try { subscription.unsubscribe(); } catch (e) { /* already dead */ }
+        subscription = null;
+      }
+      if (!canvasWebSocketService.connected) return;
+
       subscription = canvasWebSocketService.subscribeToDraw(roomCode, (data) => {
         if (data.senderUsername === username) return;
         if (data.type === "CANVAS_CLEAR") {
@@ -146,26 +153,31 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
       });
     };
 
+    // Listen for connection/reconnection events to (re)subscribe
+    const handleConnectionStatus = (status) => {
+      if (status === true) {
+        createSubscription();
+      }
+    };
+    canvasWebSocketService.on("connectionStatus", handleConnectionStatus);
+
+    // Subscribe immediately if already connected
     if (canvasWebSocketService.connected) {
       createSubscription();
-    } else {
-      const handleReady = (status) => {
-        if (status === true) {
-          createSubscription();
-          canvasWebSocketService.off("connectionStatus", handleReady);
-        }
-      };
-      canvasWebSocketService.on("connectionStatus", handleReady);
     }
 
     return () => {
+      canvasWebSocketService.off("connectionStatus", handleConnectionStatus);
       if (subscription) {
-        subscription.unsubscribe();
+        try { subscription.unsubscribe(); } catch (e) { /* already dead */ }
       }
     };
   }, [roomCode, username, clearCanvasLocal, renderStroke]);
 
+  // Canvas state restore + round clear — handles reconnect edge cases
   useEffect(() => {
+    let canvasStateConnectionHandler = null;
+
     const handleCanvasState = (data) => {
       if (data.type === "CANVAS_STATE" && data.strokes) {
         clearCanvasLocal();
@@ -179,6 +191,12 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
       }
     };
 
+    const requestState = () => {
+      if (canvasWebSocketService.connected) {
+        canvasWebSocketService.requestCanvasState(roomCode);
+      }
+    };
+
     canvasWebSocketService.on("canvasState", handleCanvasState);
     webSocketService.on("roomUpdate", handleRoomUpdate);
 
@@ -188,12 +206,26 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
       handleCanvasState(pending);
     }
 
-    // Request canvas state from server after listener is registered
-    canvasWebSocketService.requestCanvasState(roomCode);
+    // Request canvas state — wait for connection if not yet connected
+    if (canvasWebSocketService.connected) {
+      requestState();
+    } else {
+      canvasStateConnectionHandler = (status) => {
+        if (status === true) {
+          requestState();
+          canvasWebSocketService.off("connectionStatus", canvasStateConnectionHandler);
+          canvasStateConnectionHandler = null;
+        }
+      };
+      canvasWebSocketService.on("connectionStatus", canvasStateConnectionHandler);
+    }
 
     return () => {
       canvasWebSocketService.off("canvasState", handleCanvasState);
       webSocketService.off("roomUpdate", handleRoomUpdate);
+      if (canvasStateConnectionHandler) {
+        canvasWebSocketService.off("connectionStatus", canvasStateConnectionHandler);
+      }
     };
   }, [roomCode, clearCanvasLocal, renderStroke]);
 

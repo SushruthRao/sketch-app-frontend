@@ -38,6 +38,7 @@ class CanvasWebSocketService {
                 },
                 onWebSocketClose: () => {
                     this.connected = false;
+                    this.notify('connectionStatus', false);
                     console.log("canvas ws connection closed");
                 },
                 reconnectDelay: 5000
