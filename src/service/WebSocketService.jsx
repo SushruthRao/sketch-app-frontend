@@ -10,7 +10,6 @@ class WebSocketService {
         this.client = null;
         this.connected = false;
         this.listeners = {};
-        this.pendingCanvasState = null;
     }
 
     connect(onConnected , onError) {
@@ -32,7 +31,6 @@ class WebSocketService {
                     this.subscribeToErrors();
                     this.subscribeToWord();
                     this.subscribeToRoundState();
-                    this.subscribeToCanvasState();
                     console.log("ws connected");
                     onConnected();
                 },
@@ -57,7 +55,6 @@ class WebSocketService {
             this.client = null;
             this.listeners = {};
             this.connected = false;
-            this.pendingCanvasState = null;
         }
     }
 
@@ -105,80 +102,6 @@ class WebSocketService {
             console.log('Round state received', data);
             this.notify('roundState', data);
         })
-    }
-
-    subscribeToCanvasState() {
-        if(!this.connected)
-        {
-            console.error("subscribeToCanvasState : not connected to ws")
-            return;
-        }
-        this.client.subscribe('/user/queue/canvas-state', (message) => {
-            const data = JSON.parse(message.body);
-            console.log('Canvas state received', data);
-            // Buffer the state so Whiteboard can consume it even if it mounts later
-            this.pendingCanvasState = data;
-            this.notify('canvasState', data);
-        })
-    }
-
-    consumePendingCanvasState() {
-        const state = this.pendingCanvasState;
-        this.pendingCanvasState = null;
-        return state;
-    }
-
-    subscribeToDrawChannel(roomCode) {
-        if(!this.connected)
-        {
-            console.error("subscribeToDrawChannel : not connected to ws")
-            return;
-        }
-        this.client.subscribe(`/topic/room/${roomCode}/draw`, (message) => {
-            const data = JSON.parse(message.body);
-            this.notify('drawStroke', data);
-        })
-    }
-
-    subscribeToDraw(roomCode, callback) {
-        if (!this.connected) {
-            console.error("subscribeToDraw: not connected to ws");
-            return null;
-        }
-        const subscription = this.client.subscribe(`/topic/room/${roomCode}/draw`, (message) => {
-            const data = JSON.parse(message.body);
-            callback(data);
-        });
-        console.log(`Subscribed to draw for room ${roomCode}`);
-        return subscription;
-    }
-
-    sendDrawStroke(roomCode, strokeData) {
-        if(!this.connected)
-        {
-            console.log("error in websocketservice - not connected")
-            return;
-        }
-        this.client.publish({
-            destination : `/app/room/${roomCode}/draw`,
-            body : JSON.stringify(strokeData)
-        });
-    }
-
-    requestCanvasState(roomCode) {
-        if(!this.connected) return;
-        this.client.publish({
-            destination : `/app/room/${roomCode}/request-canvas`,
-            body : JSON.stringify({})
-        });
-    }
-
-    sendCanvasClear(roomCode) {
-        if(!this.connected) return;
-        this.client.publish({
-            destination : `/app/room/${roomCode}/canvas-clear`,
-            body : JSON.stringify({})
-        });
     }
 
     joinRoom(roomCode)

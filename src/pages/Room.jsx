@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import rough from "roughjs";
 import webSocketService from "../service/WebSocketService";
+import canvasWebSocketService from "../service/CanvasWebSocketService";
 import { getRoomDetails } from "../service/RoomService";
 import { getActiveSession } from "../service/SessionService";
 import { useNavigate, useParams } from "react-router-dom";
@@ -491,9 +492,11 @@ const Room = () => {
       };
       setMessages((prev) => [...prev, gameOverMsg]);
       showSuccessToast(`Game over! Winner: ${data.winner}`);
+      canvasWebSocketService.disconnect();
       webSocketService.disconnect();
       setWsConnected(false);
     } else if (data.type === CONFIG.roomStatus.GAME_ENDED) {
+      canvasWebSocketService.disconnect();
       webSocketService.disconnect();
       setWsConnected(false);
       setGameStarted(false);
@@ -546,6 +549,7 @@ const Room = () => {
         errorData,
       );
       setTimeout(() => {
+        canvasWebSocketService.disconnect();
         webSocketService.disconnect();
         setWsConnected(false);
         navigate("/");
@@ -555,6 +559,7 @@ const Room = () => {
   );
 
   const handleLeave = () => {
+    canvasWebSocketService.disconnect();
     webSocketService.disconnect();
     navigate("/");
   };
@@ -623,11 +628,32 @@ const Room = () => {
           if (!webSocketService.connected) {
             webSocketService.connect(
               () => {
+                canvasWebSocketService.connect(
+                  () => {
+                    setWsConnected(true);
+                    setRoomLoading(false);
+                  },
+                  (err) => {
+                    console.error("Canvas WS error:", err);
+                    setWsConnected(true);
+                    setRoomLoading(false);
+                  },
+                );
+              },
+              (err) => {
+                console.error(err);
+                setRoomLoading(false);
+              },
+            );
+          } else if (!canvasWebSocketService.connected) {
+            canvasWebSocketService.connect(
+              () => {
                 setWsConnected(true);
                 setRoomLoading(false);
               },
               (err) => {
-                console.error(err);
+                console.error("Canvas WS error:", err);
+                setWsConnected(true);
                 setRoomLoading(false);
               },
             );
@@ -653,6 +679,7 @@ const Room = () => {
       webSocketService.off("word", handleWordReceived);
       webSocketService.off("roundState", handleRoundStateReceived);
       webSocketService.off("gameError", handleGameError);
+      canvasWebSocketService.disconnect();
       webSocketService.disconnect();
       wsInitialized.current = false;
       hasJoined.current = false;

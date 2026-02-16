@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useRef, useState, useEffect, useCallback, useContext } from "react";
 import rough from "roughjs";
 import webSocketService from "../service/WebSocketService";
+import canvasWebSocketService from "../service/CanvasWebSocketService";
 import WhiteboardColorSelect from "./WhiteBoardColorSelect";
 import SketchSlider from "./SketchSlider";
 import { WHITEBOARD_CONFIG as CONFIG } from "../config/LabelConfig";
@@ -133,7 +134,7 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
     let subscription = null;
 
     const createSubscription = () => {
-      subscription = webSocketService.subscribeToDraw(roomCode, (data) => {
+      subscription = canvasWebSocketService.subscribeToDraw(roomCode, (data) => {
         if (data.senderUsername === username) return;
         if (data.type === "CANVAS_CLEAR") {
           clearCanvasLocal();
@@ -145,16 +146,16 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
       });
     };
 
-    if (webSocketService.connected) {
+    if (canvasWebSocketService.connected) {
       createSubscription();
     } else {
       const handleReady = (status) => {
         if (status === true) {
           createSubscription();
-          webSocketService.off("connectionStatus", handleReady);
+          canvasWebSocketService.off("connectionStatus", handleReady);
         }
       };
-      webSocketService.on("connectionStatus", handleReady);
+      canvasWebSocketService.on("connectionStatus", handleReady);
     }
 
     return () => {
@@ -178,20 +179,20 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
       }
     };
 
-    webSocketService.on("canvasState", handleCanvasState);
+    canvasWebSocketService.on("canvasState", handleCanvasState);
     webSocketService.on("roomUpdate", handleRoomUpdate);
 
     // Check for buffered canvas state that arrived before this listener was registered
-    const pending = webSocketService.consumePendingCanvasState();
+    const pending = canvasWebSocketService.consumePendingCanvasState();
     if (pending) {
       handleCanvasState(pending);
     }
 
     // Request canvas state from server after listener is registered
-    webSocketService.requestCanvasState(roomCode);
+    canvasWebSocketService.requestCanvasState(roomCode);
 
     return () => {
-      webSocketService.off("canvasState", handleCanvasState);
+      canvasWebSocketService.off("canvasState", handleCanvasState);
       webSocketService.off("roomUpdate", handleRoomUpdate);
     };
   }, [roomCode, clearCanvasLocal, renderStroke]);
@@ -211,7 +212,7 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
       lineWidth: toolRef.current === "eraser" ? 20 : lineWidthRef.current,
       points: points,
     };
-    webSocketService.sendDrawStroke(roomCode, strokeData);
+    canvasWebSocketService.sendDrawStroke(roomCode, strokeData);
 
     lastSentPointRef.current = buffer[buffer.length - 1];
     sendBufferRef.current = [];
@@ -303,7 +304,7 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
 
   const handleClearCanvas = () => {
     clearCanvasLocal();
-    webSocketService.sendCanvasClear(roomCode);
+    canvasWebSocketService.sendCanvasClear(roomCode);
   };
 
   return (
