@@ -220,8 +220,8 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
       e.clientY !== undefined ? e.clientY : e.touches?.[0]?.clientY;
 
     return {
-      x: Math.round((clientX - rect.left) * scaleX * 100) / 100,
-      y: Math.round((clientY - rect.top) * scaleY * 100) / 100,
+      x: Math.round((clientX - rect.left) * scaleX ) ,
+      y: Math.round((clientY - rect.top) * scaleY ),
     };
   };
 
