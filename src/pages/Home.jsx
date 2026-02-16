@@ -13,19 +13,22 @@ import PencilScene from "../components/PencilScene";
 import EraserScene from "../components/EraserScene";
 import AnimatedPencilWithBackground from "../components/AnimatedPencilWithBackground";
 import AnimatedEraserWithBackground from "../components/AnimatedEraserWithBackground";
+import SketchLoader from "../components/SketchLoader";
 
 const Home = () => {
   const navigate = useNavigate();
   const [roomCode, setRoomCode] = useState("");
   const { showSuccessToast, showErrorToast } = useToast();
-  const { token, username, logout } = useContext(AuthContext);
+  const { token, username, logout, isLoggingOut } = useContext(AuthContext);
   const isAuthenticated = !!token;
   const [isRecon, setIsRecon] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const handleCreateRoom = async () => {
     try {
       const response = await createRoom();
       if (response.roomCode) {
+        setIsNavigating(true);
         navigate(`/room/${response.roomCode}`);
         showSuccessToast(CONFIG.messages.createRoomSuccess);
         logger(
@@ -74,6 +77,7 @@ const Home = () => {
           showErrorToast(CONFIG.messages.roomIsInProgressToast);
           return;
         }
+        setIsNavigating(true);
         navigate(`/room/${roomCode}`);
         showSuccessToast(CONFIG.messages.createRoomSuccess);
       }
@@ -82,6 +86,14 @@ const Home = () => {
       logger(CONFIG.fileName, CONFIG.methods.handleJoinRoom, err);
     }
   };
+
+  if (isNavigating) {
+    return <SketchLoader message="Joining room..." />;
+  }
+
+  if (isLoggingOut) {
+    return <SketchLoader message="Logging out..." />;
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col md:grid md:grid-cols-3 items-center p-3">
@@ -134,6 +146,7 @@ const Home = () => {
                   text={CONFIG.ui.logoutButton.logoutButtonText}
                   color={CONFIG.ui.logoutButton.logoutButtonColor}
                   onClick={logout}
+                  isLoading={isLoggingOut}
                 />
               </div>
             </>

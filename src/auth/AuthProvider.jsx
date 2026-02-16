@@ -200,7 +200,7 @@ const handleVisibilityChange = () => {
 
 
   return (
-    <AuthContext.Provider value={{ token, loading, register, login, logout, username }}>
+    <AuthContext.Provider value={{ token, loading, register, login, logout, username, isLoggingOut }}>
            {children}
     </AuthContext.Provider>
   );

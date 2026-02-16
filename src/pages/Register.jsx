@@ -7,6 +7,7 @@ import SketchButton from '../components/SketchButton';
 import { useToast } from '../toast/CustomToastHook';
 import { REGISTER_CONFIG as CONFIG } from '../config/LabelConfig';
 import { logger } from '../utils/Logger';
+import SketchLoader from '../components/SketchLoader';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const Register = () => {
   const [formData, setFormData] = useState({ username: '', email: '', passwordHash: '' });
   const [status, setStatus] = useState({ type: '', message: '' });
   const [loading, setLoading] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleChange = (id, value) => {
     setFormData((prev) => ({ ...prev, [id]: value }));
@@ -45,6 +47,14 @@ const Register = () => {
       setLoading(false);
     }
   };
+
+  if (loading && !status.message) {
+    return <SketchLoader message="Registering..." />;
+  }
+
+  if (isTransitioning) {
+    return <SketchLoader message="Loading..." />;
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-1">
@@ -80,9 +90,9 @@ const Register = () => {
           />
         </div>
 
-        <button 
+        <button
           type="button"
-          onClick={() => navigate('/login')}
+          onClick={() => { setIsTransitioning(true); navigate('/login'); }}
           className="font-gloria text-gray-500 hover:text-black transition-colors text-sm mb-4"
         >
           Already have an account? Login

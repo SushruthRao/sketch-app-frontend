@@ -16,6 +16,7 @@ import SketchChatBox from "../components/SketchChatBox";
 import SketchLeaderboard from "../components/SketchLeaderboard";
 import Whiteboard from "../components/Whiteboard";
 import SketchClipboard from "../components/SketchClipboard";
+import SketchLoader from "../components/SketchLoader";
 
 const Room = () => {
   const { roomCode } = useParams();
@@ -23,6 +24,7 @@ const Room = () => {
   const [players, setPlayers] = useState([]);
   const [room, setRoom] = useState(null);
   const [wsConnected, setWsConnected] = useState(false);
+  const [roomLoading, setRoomLoading] = useState(true);
   const username = localStorage.getItem("userName");
   const token = localStorage.getItem("userToken");
   const [gameStarted, setGameStarted] = useState(false);
@@ -82,7 +84,7 @@ const Room = () => {
     });
     observer.observe(headerRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [roomLoading]);
 
   useEffect(() => {
     const canvas = headerCanvasRef.current;
@@ -106,7 +108,7 @@ const Room = () => {
     });
     observer.observe(playersRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [roomLoading]);
 
   useEffect(() => {
     const canvas = playersCanvasRef.current;
@@ -130,7 +132,7 @@ const Room = () => {
     });
     observer.observe(buttonsRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [roomLoading]);
 
   useEffect(() => {
     const canvas = buttonsCanvasRef.current;
@@ -621,12 +623,17 @@ const Room = () => {
             webSocketService.connect(
               () => {
                 setWsConnected(true);
+                setRoomLoading(false);
                 webSocketService.joinRoom(roomCode);
               },
-              (err) => console.error(err),
+              (err) => {
+                console.error(err);
+                setRoomLoading(false);
+              },
             );
           } else {
             setWsConnected(true);
+            setRoomLoading(false);
             webSocketService.joinRoom(roomCode);
           }
         }
@@ -662,6 +669,10 @@ const Room = () => {
     const scoreEntry = scores.find((s) => s.username === playerUsername);
     return scoreEntry ? scoreEntry.score : 0;
   };
+
+  if (roomLoading) {
+    return <SketchLoader message="Connecting to room..." />;
+  }
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">

@@ -7,6 +7,7 @@ import SketchButton from "../components/SketchButton";
 import { useToast } from "../toast/CustomToastHook";
 import { logger } from "../utils/Logger";
 import { LOGIN_CONFIG as CONFIG } from "../config/LabelConfig";
+import SketchLoader from "../components/SketchLoader";
 
 const Login = () => {
 
@@ -16,6 +17,7 @@ const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleChange = (id, value) => setFormData(prev => ({ ...prev, [id]: value }));
 
@@ -48,6 +50,14 @@ const Login = () => {
     }
   };
 
+  if (loading && !error) {
+    return <SketchLoader message="Logging in..." />;
+  }
+
+  if (isTransitioning) {
+    return <SketchLoader message="Loading..." />;
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-1">
       <SketchTitleComponent isLogin={true} className="mb-6 ml-22" />
@@ -71,7 +81,7 @@ const Login = () => {
           onClick={handleSubmit}
         />
 
-        <button type="button" onClick={() => navigate("/register")} className="font-gloria text-gray-500 text-sm">
+        <button type="button" onClick={() => { setIsTransitioning(true); navigate("/register"); }} className="font-gloria text-gray-500 text-sm">
           No account? Register here
         </button>
       </form>

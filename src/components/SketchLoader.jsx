@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import rough from 'roughjs';
 import paperBg from '../assets/paper_background.jpg';
 
-const SketchLoader = () => {
+const SketchLoader = ({ message = "Loading..." }) => {
   const canvasRef = useRef(null);
   const requestRef = useRef();
   const timeRef = useRef(0);
@@ -45,7 +45,7 @@ const SketchLoader = () => {
         ctx.fillStyle = '#000000';
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("Loading...", canvas.width / 2, canvas.height / 2 + 80);
+        ctx.fillText(message, canvas.width / 2, canvas.height / 2 + 80);
 
 
         timeRef.current += 1;
