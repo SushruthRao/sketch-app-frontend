@@ -10,6 +10,7 @@ class WebSocketService {
         this.client = null;
         this.connected = false;
         this.listeners = {};
+        this.pendingCanvasState = null;
     }
 
     connect(onConnected , onError) {
@@ -56,6 +57,7 @@ class WebSocketService {
             this.client = null;
             this.listeners = {};
             this.connected = false;
+            this.pendingCanvasState = null;
         }
     }
 
@@ -114,8 +116,16 @@ class WebSocketService {
         this.client.subscribe('/user/queue/canvas-state', (message) => {
             const data = JSON.parse(message.body);
             console.log('Canvas state received', data);
+            // Buffer the state so Whiteboard can consume it even if it mounts later
+            this.pendingCanvasState = data;
             this.notify('canvasState', data);
         })
+    }
+
+    consumePendingCanvasState() {
+        const state = this.pendingCanvasState;
+        this.pendingCanvasState = null;
+        return state;
     }
 
     subscribeToDrawChannel(roomCode) {
@@ -152,6 +162,14 @@ class WebSocketService {
         this.client.publish({
             destination : `/app/room/${roomCode}/draw`,
             body : JSON.stringify(strokeData)
+        });
+    }
+
+    requestCanvasState(roomCode) {
+        if(!this.connected) return;
+        this.client.publish({
+            destination : `/app/room/${roomCode}/request-canvas`,
+            body : JSON.stringify({})
         });
     }
 

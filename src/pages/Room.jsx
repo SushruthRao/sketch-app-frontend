@@ -32,6 +32,7 @@ const Room = () => {
   const [error, setError] = useState("");
   const [isHost, setIsHost] = useState(false);
   const wsInitialized = useRef(false);
+  const hasJoined = useRef(false);
   const { showSuccessToast, showErrorToast } = useToast();
   const [disconnectedPlayers, setDisconnectedPlayers] = useState(new Set());
   const [reconnectionTimers, setReconnectionTimers] = useState({});
@@ -624,7 +625,6 @@ const Room = () => {
               () => {
                 setWsConnected(true);
                 setRoomLoading(false);
-                webSocketService.joinRoom(roomCode);
               },
               (err) => {
                 console.error(err);
@@ -634,7 +634,6 @@ const Room = () => {
           } else {
             setWsConnected(true);
             setRoomLoading(false);
-            webSocketService.joinRoom(roomCode);
           }
         }
       } catch (err) {
@@ -656,8 +655,17 @@ const Room = () => {
       webSocketService.off("gameError", handleGameError);
       webSocketService.disconnect();
       wsInitialized.current = false;
+      hasJoined.current = false;
     };
   }, [roomCode, token]);
+
+  // Join room after Whiteboard mounts so its canvasState listener is ready
+  useEffect(() => {
+    if (!roomLoading && wsConnected && !hasJoined.current) {
+      hasJoined.current = true;
+      webSocketService.joinRoom(roomCode);
+    }
+  }, [roomLoading, wsConnected, roomCode]);
 
   const handleChatSendMessage = (text) => {
     if (!text.trim()) return;

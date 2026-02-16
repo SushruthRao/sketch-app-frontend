@@ -8,7 +8,6 @@
   font-weight: normal;
   font-style: normal;
 }
-
 body {
   margin: 0;
   padding: 0;
@@ -20,7 +19,7 @@ body {
   background-repeat: no-repeat;
   min-height: 100dvh;
   width: 100%;
-  background-color: #f3f4f6;
+  background-color: #e1e5e8;
 }
 
 .custom-scrollbar::-webkit-scrollbar {

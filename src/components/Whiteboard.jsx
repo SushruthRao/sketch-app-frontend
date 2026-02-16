@@ -181,11 +181,20 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
     webSocketService.on("canvasState", handleCanvasState);
     webSocketService.on("roomUpdate", handleRoomUpdate);
 
+    // Check for buffered canvas state that arrived before this listener was registered
+    const pending = webSocketService.consumePendingCanvasState();
+    if (pending) {
+      handleCanvasState(pending);
+    }
+
+    // Request canvas state from server after listener is registered
+    webSocketService.requestCanvasState(roomCode);
+
     return () => {
       webSocketService.off("canvasState", handleCanvasState);
       webSocketService.off("roomUpdate", handleRoomUpdate);
     };
-  }, [clearCanvasLocal, renderStroke]);
+  }, [roomCode, clearCanvasLocal, renderStroke]);
 
   const flushSendBuffer = useCallback(() => {
     const buffer = sendBufferRef.current;
