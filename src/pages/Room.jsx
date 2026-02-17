@@ -1,7 +1,8 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import rough from "roughjs";
+import paperBgOld from "../assets/paper_background_old.jpg";
 import webSocketService from "../service/WebSocketService";
 import canvasWebSocketService from "../service/CanvasWebSocketService";
 import { getRoomDetails } from "../service/RoomService";
@@ -58,6 +59,15 @@ const Room = () => {
   const isDrawer =
     gameStarted && currentDrawer != null && currentDrawer === username;
 
+  // Set body background to paper_background_old instantly on mount, restore on unmount
+  useLayoutEffect(() => {
+    const prev = document.body.style.backgroundImage;
+    document.body.style.backgroundImage = `url(${paperBgOld})`;
+    return () => {
+      document.body.style.backgroundImage = prev;
+    };
+  }, []);
+
   const headerRef = useRef(null);
   const headerCanvasRef = useRef(null);
   const [headerDimensions, setHeaderDimensions] = useState({
@@ -92,15 +102,18 @@ const Room = () => {
   useEffect(() => {
     const canvas = headerCanvasRef.current;
     if (!canvas || headerDimensions.width === 0) return;
-    const rc = rough.canvas(canvas);
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    rc.rectangle(5, 5, headerDimensions.width - 8, headerDimensions.height - 7, {
-      roughness: 0.4,
-      stroke: "#333",
-      strokeWidth: 1.7,
-      fill: "transparent",
+    const id = requestAnimationFrame(() => {
+      const rc = rough.canvas(canvas);
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      rc.rectangle(5, 5, headerDimensions.width - 8, headerDimensions.height - 7, {
+        roughness: 0.4,
+        stroke: "#333",
+        strokeWidth: 1.7,
+        fill: "transparent",
+      });
     });
+    return () => cancelAnimationFrame(id);
   }, [headerDimensions]);
 
   useEffect(() => {
@@ -116,15 +129,18 @@ const Room = () => {
   useEffect(() => {
     const canvas = playersCanvasRef.current;
     if (!canvas || playersDimensions.width === 0) return;
-    const rc = rough.canvas(canvas);
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    rc.rectangle(5, 5, playersDimensions.width - 10, playersDimensions.height - 10, {
-      roughness: 0.8,
-      stroke: "#333",
-      strokeWidth: 1.7,
-      fill: "transparent",
+    const id = requestAnimationFrame(() => {
+      const rc = rough.canvas(canvas);
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      rc.rectangle(5, 5, playersDimensions.width - 10, playersDimensions.height - 10, {
+        roughness: 0.8,
+        stroke: "#333",
+        strokeWidth: 1.7,
+        fill: "transparent",
+      });
     });
+    return () => cancelAnimationFrame(id);
   }, [playersDimensions]);
 
   useEffect(() => {
@@ -140,15 +156,18 @@ const Room = () => {
   useEffect(() => {
     const canvas = buttonsCanvasRef.current;
     if (!canvas || buttonsDimensions.width === 0) return;
-    const rc = rough.canvas(canvas);
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    rc.rectangle(5, 5, buttonsDimensions.width - 10, buttonsDimensions.height - 10, {
-      roughness: 0.7,
-      stroke: "#333",
-      strokeWidth: 1.7,
-      fill: "transparent",
+    const id = requestAnimationFrame(() => {
+      const rc = rough.canvas(canvas);
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      rc.rectangle(5, 5, buttonsDimensions.width - 10, buttonsDimensions.height - 10, {
+        roughness: 0.7,
+        stroke: "#333",
+        strokeWidth: 1.7,
+        fill: "transparent",
+      });
     });
+    return () => cancelAnimationFrame(id);
   }, [buttonsDimensions]);
 
   const handleWordReceived = (data) => {
