@@ -574,7 +574,7 @@ const Room = () => {
         canvasWebSocketService.disconnect();
         webSocketService.disconnect();
         setWsConnected(false);
-      setCanvasWsConnected(false);
+        setCanvasWsConnected(false);
         navigate("/");
       });
     },
@@ -782,7 +782,7 @@ const Room = () => {
 
           {/* Center: Round info (only during active game) */}
           {gameStarted && currentRound && !isGameEnded && (
-            <div className="flex items-center gap-3 text-sm">
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 text-sm">
               <span className="font-bold">
                 Round {currentRound}
                 {totalRounds ? `/${totalRounds}` : ""}
@@ -807,10 +807,7 @@ const Room = () => {
             </div>
           )}
 
-          {/* Right: Timer */}
-          <div className="flex items-center gap-2">
-            {roundTimer && <CountdownTimer endTime={roundTimer} />}
-          </div>
+  
         </div>
       </div>
 
@@ -835,7 +832,7 @@ const Room = () => {
 
           {gameStarted && currentRound && !isGameEnded && !roundTransition && (
             <div className="w-full flex flex-col items-center overflow-hidden">
-              <div className="shrink-0 py-2 font-gloria text-center">
+              <div className="shrink-0 flex flex-row py-2 font-gloria text-center">
                 {isDrawer && currentWord && (
                   <div className="relative inline-block px-6 py-2">
                     <span className="relative z-10 text-green-700 text-xl font-bold">
@@ -852,7 +849,7 @@ const Room = () => {
                 )}
                 {!isDrawer && wordLength > 0 && (
                   <div className="relative inline-block px-6 py-2">
-                    <span className="relative z-10 text-gray-700 text-xl font-bold">
+                    <span className="relative z-10 text-gray-700 text-l md:text-xl font-bold">
                       Guess the word! ({wordLength} letters)
                     </span>
                     <div
@@ -864,11 +861,16 @@ const Room = () => {
                     />
                   </div>
                 )}
+                <div className="flex items-center gap-1 ml-3">
+                  {roundTimer && (
+                    <CountdownTimer endTime={roundTimer} enableIcon={true} />
+                  )}
+                </div>
               </div>
               <div className="flex-1 w-full flex flex-row items-center justify-center overflow-hidden mt-3 px-4 gap-2">
-              
-                  <Whiteboard roomCode={roomCode} isDrawer={isDrawer} />
-               
+
+                <Whiteboard roomCode={roomCode} isDrawer={isDrawer} />
+
               </div>
             </div>
           )}
@@ -932,11 +934,10 @@ const Room = () => {
                     return (
                       <li
                         key={player.userId || playerUsername}
-                        className={`font-gloria text-sm px-2 py-1 rounded flex items-center justify-between ${
-                          isPlayerDrawing
+                        className={`font-gloria text-sm px-2 py-1 rounded flex items-center justify-between ${isPlayerDrawing
                             ? "bg-green-50/50 border border-green-300"
                             : "hover:bg-gray-10"
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-1 min-w-0">
                           <span
@@ -1020,6 +1021,7 @@ const Room = () => {
                     text={CONFIG.ui.startGameButton.startGameButtonText}
                     color={CONFIG.ui.startGameButton.startGameButtonColor}
                     onClick={handleStartGame}
+                    disableEffects={true}
                   />
                 </div>
               )}
@@ -1032,6 +1034,7 @@ const Room = () => {
                   text={CONFIG.ui.leaveButton.leaveButtonText}
                   color={CONFIG.ui.leaveButton.leaveButtonColor}
                   onClick={handleLeave}
+                  disableEffects={true}
                 />
               </div>
             </div>
