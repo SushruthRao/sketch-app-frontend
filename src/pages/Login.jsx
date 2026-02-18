@@ -49,7 +49,6 @@ const Login = () => {
 
       logger(CONFIG.fileName, CONFIG.methods.handleSubmit, CONFIG.messages.logSuccess, response);
       showSuccessToast(CONFIG.messages.success);
-      navigate("/");
 
     } catch (err) {
 

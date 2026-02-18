@@ -20,8 +20,7 @@ const Home = () => {
   const navigate = useNavigate();
   const [roomCode, setRoomCode] = useState("");
   const { showSuccessToast, showErrorToast } = useToast();
-  const { token, username, logout, isLoggingOut } = useContext(AuthContext);
-  const isAuthenticated = !!token;
+  const { isAuthenticated, username, logout, isLoggingOut, loading } = useContext(AuthContext);
   const [isRecon, setIsRecon] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
@@ -101,6 +100,10 @@ const Home = () => {
       logger(CONFIG.fileName, CONFIG.methods.handleJoinRoom, err);
     }
   };
+
+  if (loading) {
+    return <SketchLoader />;
+  }
 
   if (isNavigating) {
     return <SketchLoader message="Joining room..." />;

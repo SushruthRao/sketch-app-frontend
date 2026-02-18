@@ -1,5 +1,6 @@
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
+import { store } from '../store/store';
 
 const CANVAS_WS_URL = import.meta.env.VITE_CANVAS_WS_URL || import.meta.env.VITE_WS_URL.replace('/ws', '/ws-canvas');
 
@@ -13,22 +14,22 @@ class CanvasWebSocketService {
     }
 
     connect(onConnected, onError) {
-        const token = localStorage.getItem("userToken");
-        if (!token) {
-            onError(new Error("Token not found"));
-            return;
-        }
         this.client = new Client(
             {
                 webSocketFactory: () => new SockJS(CANVAS_WS_URL),
-                connectHeaders: {
-                    Authorization: `Bearer ${token}`
+                connectHeaders: {},
+                beforeConnect: () => {
+                    const token = store.getState().auth.accessToken;
+                    if (token) {
+                        this.client.connectHeaders = { Authorization: `Bearer ${token}` };
+                    }
                 },
                 debug: (str) => console.log("CANVAS-STOMP: ", str),
                 onConnect: () => {
                     this.connected = true;
                     this.notify('connectionStatus', true);
                     this.subscribeToCanvasState();
+                    this.subscribeToErrors();
                     console.log("canvas ws connected");
                     onConnected();
                 },
@@ -55,6 +56,21 @@ class CanvasWebSocketService {
             this.connected = false;
             this.pendingCanvasState = null;
         }
+    }
+
+    subscribeToErrors() {
+        if (!this.connected) {
+            console.error("subscribeToErrors: not connected to canvas ws");
+            return;
+        }
+        this.client.subscribe('/user/canvas-queue/errors', (message) => {
+            try {
+                const data = JSON.parse(message.body);
+                this.notify('canvasError', data);
+            } catch (e) {
+                this.notify('canvasError', { type: 'CANVAS_ERROR', message: 'An unexpected canvas error occurred' });
+            }
+        });
     }
 
     subscribeToCanvasState() {

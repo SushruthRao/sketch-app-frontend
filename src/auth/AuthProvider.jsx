@@ -1,206 +1,125 @@
 /* eslint-disable no-unused-vars */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import { handleApiRequest } from '../service/ApiService';
 import AuthContext from './AuthContext';
+import { setCredentials, setAccessToken, clearCredentials } from '../store/authSlice';
+import { scheduleTokenRefresh, clearScheduledRefresh } from '../service/Api';
+import axios from 'axios';
 
-const TOKEN_KEY = 'userToken';
-const USERNAME_KEY = 'userName';
-
-function decodeJwt(token) {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(base64));
-  } catch {
-    return null;
-  }
-}
-
-function getMsUntilExpiry(jwt) {
-  const claims = decodeJwt(jwt);
-  if (!claims?.exp) return null;
-  const expMs = claims.exp * 1000;
-  return Math.max(expMs - Date.now(), 0);
-}
+const API_URL = import.meta.env.VITE_SPRING_API_URL;
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
-    
-   const [username, setUserName] = useState(() => localStorage.getItem(USERNAME_KEY));
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const username = useSelector((state) => state.auth.username);
+  const dispatch = useDispatch();
+
   const [loading, setLoading] = useState(true);
-  const expiryTimer = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const clearTimer = () => {
-    if (expiryTimer.current) {
-      clearTimeout(expiryTimer.current);
-      expiryTimer.current = null;
-    }
+  const performSilentLogout = () => {
+    clearScheduledRefresh();
+    dispatch(clearCredentials());
+    navigate('/home', { replace: true });
   };
 
-const performSilentLogout = () => {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USERNAME_KEY);
-
-  setToken(null);
-  setUserName(null);
-
-  clearTimer();
-
-  navigate('/home', { replace: true });
-};
-
-const logout = async () => {
-  setIsLoggingOut(true);
-  await new Promise(resolve => setTimeout(resolve, 1200));
-  performSilentLogout();
-  setIsLoggingOut(false);
-};
-
-const scheduleExpiryLogout = (jwt) => {
-  clearTimer();
-  const msLeft = getMsUntilExpiry(jwt);
-  console.log("Time left for token expiry : " + msLeft);
-  if (msLeft === null || msLeft <= 0) {
-    performSilentLogout(); 
-    return;
-  }
-
-  const MAX_DELAY = 2147483647; 
-  const delay = Math.min(msLeft, MAX_DELAY);
-
-  expiryTimer.current = setTimeout(() => {
-    performSilentLogout(); 
-  }, delay);
-};
-
-
-const handleVisibilityChange = () => {
-  if (document.visibilityState === 'visible') {
-    const current = localStorage.getItem(TOKEN_KEY);
-    if (!current) {
-      if (token) performSilentLogout(); 
-      return;
-    }
-
-    scheduleExpiryLogout(current);
-  }
-};
-
-  const bootstrap = async (existingToken) => {
-    if (!existingToken) {
-      setLoading(false);
-      return;
-    }
+  const logout = async () => {
+    setIsLoggingOut(true);
     try {
-      scheduleExpiryLogout(existingToken);
+      clearScheduledRefresh();
+      await Promise.all([
+        handleApiRequest('post', '/user/logout'),
+        new Promise(resolve => setTimeout(resolve, 1200))
+      ]);
     } catch {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USERNAME_KEY);
-      setToken(null);
-      setUserName(null);
+      // proceed with client-side logout even if server call fails
+    }
+    dispatch(clearCredentials());
+    navigate('/home', { replace: true });
+    setIsLoggingOut(false);
+  };
+
+  const bootstrap = async () => {
+    try {
+      // First, get a fresh access token from the refresh cookie
+      const { data: refreshData } = await axios.post(
+        `${API_URL}/user/refresh`,
+        {},
+        { withCredentials: true }
+      );
+
+      dispatch(setAccessToken(refreshData.accessToken));
+      scheduleTokenRefresh(refreshData.expiresIn);
+
+      // Now fetch user info using the new access token
+      const meData = await handleApiRequest('get', '/user/me');
+      dispatch(setCredentials({ username: meData.userName }));
+    } catch {
+      dispatch(clearCredentials());
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    bootstrap(token);
+    bootstrap();
 
-    const onStorage = (e) => {
-      if (e.key === TOKEN_KEY) {
-        const newToken = e.newValue;
-        setToken(newToken);
-        if (!newToken) {
-          clearTimer();
-          if (location.pathname !== '/') navigate('/', { replace: true });
-        } else {
-          scheduleExpiryLogout(newToken);
-        }
-      }
-    };
-    const onAppLogout = () => logout();
+    const onAppLogout = () => performSilentLogout();
 
-    window.addEventListener('storage', onStorage);
     window.addEventListener('app:logout', onAppLogout);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      window.removeEventListener('storage', onStorage);
       window.removeEventListener('app:logout', onAppLogout);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearTimer();
+      clearScheduledRefresh();
     };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = async (email, password) => {
-  setLoading(true);
-  
-  try {
-
-    const [data] = await Promise.all([
-      handleApiRequest('post', '/user/login', { email, password }),
-      new Promise((resolve) => setTimeout(resolve, 2000)) 
-    ]);
-
-    const jsonToken = data.jsonToken;
-    const userName = data.userName;
-    console.log(data);
-    
-    if (!jsonToken) throw new Error('No token returned from server');
-    localStorage.setItem(USERNAME_KEY, userName)
-    localStorage.setItem(TOKEN_KEY, jsonToken);
-    setToken(jsonToken);
-    setUserName(userName)
-    scheduleExpiryLogout(jsonToken);
-    navigate('/home', { replace: true });
-  
-    
-  } catch (error) {
-    
-
-    console.log("Auth Provider " + error);
-    throw error; 
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-   const register = async (registrationDetails) => {
     setLoading(true);
-    try {
-      const data = await handleApiRequest('post', '/user/register', registrationDetails);
 
-      if (data.jsonToken) {
-        const jsonToken = data.jsonToken;
-        localStorage.setItem(TOKEN_KEY, jsonToken);
-        setToken(jsonToken);
-        scheduleExpiryLogout(jsonToken);
-        navigate('/home', { replace: true });
-      } else {
-        navigate('/', { replace: true });
-      }
-      
-      return data; 
+    try {
+      const [data] = await Promise.all([
+        handleApiRequest('post', '/user/login', { email, password }),
+        new Promise((resolve) => setTimeout(resolve, 2000))
+      ]);
+
+      const userName = data.userName;
+      const accessToken = data.accessToken;
+      const expiresIn = data.expiresIn;
+
+      dispatch(setCredentials({ username: userName, accessToken }));
+      scheduleTokenRefresh(expiresIn);
+      navigate('/home', { replace: true });
+
     } catch (error) {
-      console.error("Registration error:", error);
-      throw error; 
-    }
-    finally{
+      console.log("Auth Provider " + error);
+      throw error;
+    } finally {
       setLoading(false);
     }
   };
 
-
+  const register = async (registrationDetails) => {
+    setLoading(true);
+    try {
+      const data = await handleApiRequest('post', '/user/register', registrationDetails);
+      navigate('/', { replace: true });
+      return data;
+    } catch (error) {
+      console.error("Registration error:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ token, loading, register, login, logout, username, isLoggingOut }}>
+    <AuthContext.Provider value={{ isAuthenticated, loading, register, login, logout, username, isLoggingOut }}>
            {children}
     </AuthContext.Provider>
   );

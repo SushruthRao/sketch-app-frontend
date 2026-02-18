@@ -1,6 +1,7 @@
 import React from 'react'
 import {Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
+import { store } from '../store/store';
 
 const WS_URL = import.meta.env.VITE_WS_URL;
 
@@ -13,16 +14,15 @@ class WebSocketService {
     }
 
     connect(onConnected , onError) {
-        const token = localStorage.getItem("userToken");
-        if(!token) {
-            onError(new Error("Token not found"));
-            return;
-        }
         this.client = new Client(
             {
                 webSocketFactory : () => new SockJS(WS_URL),
-                connectHeaders : {
-                    Authorization : `Bearer ${token}`
+                connectHeaders: {},
+                beforeConnect: () => {
+                    const token = store.getState().auth.accessToken;
+                    if (token) {
+                        this.client.connectHeaders = { Authorization: `Bearer ${token}` };
+                    }
                 },
                 debug : (str) => console.log("STOMP: ", str),
                 onConnect : () => {

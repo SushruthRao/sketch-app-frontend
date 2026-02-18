@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import rough from "roughjs";
 import paperBgOld from "../assets/paper_background_old.jpg";
 import webSocketService from "../service/WebSocketService";
@@ -19,6 +19,7 @@ import SketchLeaderboard from "../components/SketchLeaderboard";
 import Whiteboard from "../components/Whiteboard";
 import SketchClipboard from "../components/SketchClipboard";
 import SketchLoader from "../components/SketchLoader";
+import AuthContext from "../auth/AuthContext";
 
 const Room = () => {
   const { roomCode } = useParams();
@@ -28,8 +29,7 @@ const Room = () => {
   const [wsConnected, setWsConnected] = useState(false);
   const [canvasWsConnected, setCanvasWsConnected] = useState(false);
   const [roomLoading, setRoomLoading] = useState(true);
-  const username = localStorage.getItem("userName");
-  const token = localStorage.getItem("userToken");
+  const { username, isAuthenticated, loading: authLoading } = useContext(AuthContext);
   const [gameStarted, setGameStarted] = useState(false);
   const [session, setSession] = useState(null);
   const [error, setError] = useState("");
@@ -561,6 +561,14 @@ const Room = () => {
     }
   };
 
+  const handleCanvasError = useCallback(
+    (errorData) => {
+      showErrorToast(errorData.message || "A canvas error occurred");
+      logger(CONFIG.fileName, "handleCanvasError", "Canvas Error", errorData);
+    },
+    [showErrorToast],
+  );
+
   const handleWebSocketError = useCallback(
     (errorData) => {
       showErrorToast(`Error connecting to websocket !`);
@@ -617,7 +625,8 @@ const Room = () => {
   }, []);
 
   useEffect(() => {
-    if (!token) {
+    if (authLoading) return;
+    if (!isAuthenticated) {
       navigate("/login");
       return;
     }
@@ -659,6 +668,7 @@ const Room = () => {
           webSocketService.on("word", handleWordReceived);
           webSocketService.on("roundState", handleRoundStateReceived);
           webSocketService.on("gameError", handleGameError);
+          canvasWebSocketService.on("canvasError", handleCanvasError);
           if (!webSocketService.connected) {
             webSocketService.connect(
               () => {
@@ -710,15 +720,18 @@ const Room = () => {
     init();
 
     return () => {
+      webSocketService.off("roomUpdate", handleRoomUpdate);
+      webSocketService.off("error", handleWebSocketError);
       webSocketService.off("word", handleWordReceived);
       webSocketService.off("roundState", handleRoundStateReceived);
       webSocketService.off("gameError", handleGameError);
+      canvasWebSocketService.off("canvasError", handleCanvasError);
       canvasWebSocketService.disconnect();
       webSocketService.disconnect();
       wsInitialized.current = false;
       hasJoined.current = false;
     };
-  }, [roomCode, token]);
+  }, [roomCode, isAuthenticated, authLoading]);
 
   // Join room after Whiteboard mounts so its canvasState listener is ready
   useEffect(() => {

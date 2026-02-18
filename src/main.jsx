@@ -3,6 +3,9 @@ import "@fontsource/gloria-hallelujah";
 import "./index.css";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+import { store, persistor } from "./store/store";
 import { AuthProvider } from "./auth/AuthProvider";
 import { ToastContainer } from "react-toastify";
 import PublicRoute from "./routes/PublicRoute";
@@ -18,8 +21,10 @@ const Test = lazy(() => import("./pages/Test"));
 const Penciltool = lazy(() => import("./components/PencilTool"));
 
 createRoot(document.getElementById("root")).render(
-  <BrowserRouter>
-    <AuthProvider>
+  <Provider store={store}>
+    <PersistGate loading={<SketchLoader />} persistor={persistor}>
+      <BrowserRouter>
+        <AuthProvider>
       <Suspense fallback={<SketchLoader />}>
         <Routes>
           <Route element={<PublicRoute />}>
@@ -47,6 +52,8 @@ createRoot(document.getElementById("root")).render(
         newestOnTop={true}
         closeButton={false}
       />
-    </AuthProvider>
-  </BrowserRouter>,
+        </AuthProvider>
+      </BrowserRouter>
+    </PersistGate>
+  </Provider>,
 );

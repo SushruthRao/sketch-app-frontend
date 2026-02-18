@@ -1,5 +1,12 @@
 import api from "./Api";
 
+class ApiError extends Error {
+  constructor(message, statusCode) {
+    super(message);
+    this.statusCode = statusCode;
+  }
+}
+
 export const handleApiRequest = async (method, url, data = null, params = null) => {
   try {
     const response = await api({
@@ -13,20 +20,19 @@ export const handleApiRequest = async (method, url, data = null, params = null) 
 
   } catch (error) {
     let errorMessage = "An unexpected error occurred";
+    let statusCode = 0;
 
     if (error.response) {
-
-      errorMessage = error.response.data?.message || `Error: ${error.response.status}`;
+      statusCode = error.response.status;
+      errorMessage = error.response.data?.message || error.response.data?.error || `Error: ${statusCode}`;
     } else if (error.request) {
-
       errorMessage = "No response from server. Check your connection or CORS settings.";
     } else {
-
       errorMessage = error.message;
     }
 
-    console.error(`API Error: ${errorMessage}`);
+    console.error(`API Error [${statusCode}]: ${errorMessage}`);
 
-    throw new Error(errorMessage);
+    throw new ApiError(errorMessage, statusCode);
   }
 };
