@@ -50,12 +50,12 @@ const SketchTitleComponent = ({
         ctx.scale(scale, scale);
         rc.path('m83.883 51.659 -7.541 -7.541L26.667 93.792V101.333h7.541zm7.541 -7.541 7.541 -7.541 -7.541 -7.541 -7.541 7.541zM38.624 112H16v-22.629L87.653 17.717a5.333 5.333 0 0 1 7.541 0l15.088 15.088a5.333 5.333 0 0 1 0 7.541L38.629 112z', {
           stroke: '#000',
-          strokeWidth: 1.2,
+          strokeWidth: 2,
           roughness: 0.7 ,
           bowing: 1.5,
           fill: 'black',
           fillStyle: 'hachure',
-          hachureGap: 3
+          hachureGap: 4
         });
         ctx.restore();
 
@@ -71,12 +71,12 @@ const SketchTitleComponent = ({
         {
            rc.path(TITLE_SVG_PATH, {
           stroke: '#000',
-          strokeWidth: 1.2,
+          strokeWidth: 1.6,
           roughness: 0.7 ,
           bowing: 1.5,
           fill: 'black',
           fillStyle: 'hachure',
-          hachureGap: 3
+          hachureGap: 4
         });
         }
         else
@@ -84,12 +84,12 @@ const SketchTitleComponent = ({
         {
             rc.path(LOGIN_SVG_PATH, {
           stroke: '#000',
-          strokeWidth: 1.2,
+          strokeWidth: 1.6,
           roughness: 0.7 ,
           bowing: 1.5,
           fill: 'black',
           fillStyle: 'hachure',
-          hachureGap: 3
+          hachureGap: 4
         });
         }
         else
@@ -97,12 +97,12 @@ const SketchTitleComponent = ({
         {
             rc.path(REGISTER_SVG_PATH, {
           stroke: '#000',
-          strokeWidth: 1.2,
+          strokeWidth: 1.6,
           roughness: 0.7 ,
           bowing: 1.5,
           fill: 'black',
           fillStyle: 'hachure',
-          hachureGap: 3
+          hachureGap: 4
         });
         }
         ctx.restore();

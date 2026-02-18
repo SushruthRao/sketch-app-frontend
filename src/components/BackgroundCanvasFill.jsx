@@ -1,12 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import rough from 'roughjs';
 
-const BackgroundCanvasFill = ({
-  width = 400,
-  height = 400,
-  diameter = 300,
-  fps = 10,
-  color = '255, 215, 0'
+const BackgroundCanvasFill = ({ 
+  width = 400, 
+  height = 400, 
+  diameter = 300, 
+  fps = 10, 
+  color = '255, 215, 0' 
 }) => {
   const canvasRef = useRef(null);
   const requestRef = useRef();
@@ -26,7 +26,7 @@ const BackgroundCanvasFill = ({
 
       if (elapsed > fpsInterval) {
         lastDrawTime = currentTime - (elapsed % fpsInterval);
-
+        
         const cx = canvas.width / 2;
         const cy = canvas.height / 2;
 
@@ -49,14 +49,15 @@ const BackgroundCanvasFill = ({
 
     requestRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(requestRef.current);
-  }, [diameter, fps, color, width, height]);
+  }, [diameter, fps, color, width, height]); 
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={width}
-      height={height}
-      style={{ width, height, display: 'block' }}
+    <canvas 
+      ref={canvasRef} 
+      width={width} 
+      height={height} 
+      
+      style={{ width, height,background: 'transparent', display: 'block' }} 
     />
   );
 };
