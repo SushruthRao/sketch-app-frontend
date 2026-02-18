@@ -116,7 +116,7 @@ const Home = () => {
           variants={dropIn} initial="hidden" animate="visible" custom={4}
           className="hidden h-100 md:flex w-full items-center justify-center bg-red"
         >
-          <AnimatedPencilWithBackground height="95%" width="100%" color="#6b6b6b" useCustomColor={true} />
+          <AnimatedPencilWithBackground height="95%" width="100%" color="#2a2a2a" useCustomColor={true} />
         </motion.div>
   
         <div className="flex flex-col items-center justify-center w-full max-w-2xl">
@@ -175,7 +175,7 @@ const Home = () => {
           variants={dropIn} initial="hidden" animate="visible" custom={4}
           className="hidden h-100 md:flex w-full items-center justify-center"
         >
-          <AnimatedEraserWithBackground height="70%" width="100%" color="#6b6b6b" useCustomColor={true} />
+          <AnimatedEraserWithBackground height="70%" width="100%" color="#2a2a2a" useCustomColor={true} />
         </motion.div>
       </div>
     );

@@ -22,7 +22,7 @@ const AnimatedEraserWithBackground = ({
   const containerRef = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
 
-  const defaultRgbString = hexToRgbValues("#929292");
+  const defaultRgbString = hexToRgbValues("#555555");
   const selectedRgbString = hexToRgbValues("#000000");
 
   useEffect(() => {

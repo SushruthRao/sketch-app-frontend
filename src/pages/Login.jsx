@@ -8,6 +8,20 @@ import { useToast } from "../toast/CustomToastHook";
 import { logger } from "../utils/Logger";
 import { LOGIN_CONFIG as CONFIG } from "../config/LabelConfig";
 import SketchLoader from "../components/SketchLoader";
+import { motion } from "framer-motion";
+
+const dropIn = {
+  hidden: { y: -50, opacity: 0 },
+  visible: (custom) => ({
+    y: 0,
+    opacity: 1,
+    transition: {
+      delay: custom * 0.2,
+      type: "spring",
+      stiffness: 40,
+    },
+  }),
+};
 
 const Login = () => {
 
@@ -60,9 +74,11 @@ const Login = () => {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-1">
-      <SketchTitleComponent isLogin={true} className="mb-6 ml-22" />
-      
-      <form  className="flex w-full max-w-xs flex-col gap-6">
+      <motion.div variants={dropIn} initial="hidden" animate="visible" custom={1}>
+        <SketchTitleComponent isLogin={true} className="mb-6 ml-22" />
+      </motion.div>
+
+      <motion.form variants={dropIn} initial="hidden" animate="visible" custom={2} className="flex w-full max-w-xs flex-col gap-6">
         {CONFIG.fields.map((field) => (
           <SketchInput
             key={field.id}
@@ -81,10 +97,10 @@ const Login = () => {
           onClick={handleSubmit}
         />
 
-        <button type="button" onClick={() => { setIsTransitioning(true); navigate("/register"); }} className="font-gloria text-gray-500 text-sm">
+        <motion.button variants={dropIn} initial="hidden" animate="visible" custom={3} type="button" onClick={() => { setIsTransitioning(true); navigate("/register"); }} className="font-gloria text-gray-500 text-sm">
           No account? Register here
-        </button>
-      </form>
+        </motion.button>
+      </motion.form>
     </div>
   );
 };

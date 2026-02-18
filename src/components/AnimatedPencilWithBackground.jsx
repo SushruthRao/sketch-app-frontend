@@ -23,7 +23,7 @@ const AnimatedPencilWithBackground = ({
   const [isHovered, setIsHovered] = useState(false); // Track hover state locally
 
   const rgbString = hexToRgbValues(color);
-  const defaultRgbString = hexToRgbValues("#828282");
+  const defaultRgbString = hexToRgbValues("#555555");
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver((entries) => {

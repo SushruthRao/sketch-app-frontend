@@ -8,6 +8,20 @@ import { useToast } from '../toast/CustomToastHook';
 import { REGISTER_CONFIG as CONFIG } from '../config/LabelConfig';
 import { logger } from '../utils/Logger';
 import SketchLoader from '../components/SketchLoader';
+import { motion } from 'framer-motion';
+
+const dropIn = {
+  hidden: { y: -50, opacity: 0 },
+  visible: (custom) => ({
+    y: 0,
+    opacity: 1,
+    transition: {
+      delay: custom * 0.2,
+      type: "spring",
+      stiffness: 40,
+    },
+  }),
+};
 
 const Register = () => {
   const navigate = useNavigate();
@@ -58,16 +72,16 @@ const Register = () => {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-1">
-      <div className="mb-6">
+      <motion.div variants={dropIn} initial="hidden" animate="visible" custom={1} className="mb-6">
         <SketchTitleComponent isRegister={true} />
-      </div>
-      <form onSubmit={handleSubmit} className="flex w-full max-w-xs flex-col gap-5">
-        
+      </motion.div>
+      <motion.form variants={dropIn} initial="hidden" animate="visible" custom={2} onSubmit={handleSubmit} className="flex w-full max-w-xs flex-col gap-5">
+
         {CONFIG.fields.map((field) => (
-          <SketchInput 
+          <SketchInput
             key={field.id}
             type={field.type}
-            placeholder={field.placeholder} 
+            placeholder={field.placeholder}
             value={formData[field.id]}
             onChange={(e) => handleChange(field.id, e.target.value)}
           />
@@ -82,22 +96,23 @@ const Register = () => {
         )}
 
         <div className="mt-2">
-          <SketchButton 
-            text={CONFIG.ui.registerButton.registerButtonText} 
-            color={CONFIG.ui.registerButton.registerButtonColor} 
-            onClick={handleSubmit} 
-            isLoading={loading} 
+          <SketchButton
+            text={CONFIG.ui.registerButton.registerButtonText}
+            color={CONFIG.ui.registerButton.registerButtonColor}
+            onClick={handleSubmit}
+            isLoading={loading}
           />
         </div>
 
-        <button
+        <motion.button
+          variants={dropIn} initial="hidden" animate="visible" custom={3}
           type="button"
           onClick={() => { setIsTransitioning(true); navigate('/login'); }}
           className="font-gloria text-gray-500 hover:text-black transition-colors text-sm mb-4"
         >
           Already have an account? Login
-        </button>
-      </form>
+        </motion.button>
+      </motion.form>
     </div>
   );
 };
