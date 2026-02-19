@@ -6,6 +6,7 @@ import { handleApiRequest } from '../service/ApiService';
 import AuthContext from './AuthContext';
 import { setCredentials, setAccessToken, clearCredentials } from '../store/authSlice';
 import { scheduleTokenRefresh, clearScheduledRefresh } from '../service/Api';
+import { store } from '../store/store';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_SPRING_API_URL;
@@ -43,8 +44,17 @@ export function AuthProvider({ children }) {
   };
 
   const bootstrap = async () => {
+    // Read directly from the store to get the rehydrated value
+    const wasAuthenticated = store.getState().auth.isAuthenticated;
+
+    if (!wasAuthenticated) {
+      // User was never logged in — no refresh cookie exists, skip the refresh call
+      setLoading(false);
+      return;
+    }
+
     try {
-      // First, get a fresh access token from the refresh cookie
+      // Get a fresh access token from the refresh cookie
       const { data: refreshData } = await axios.post(
         `${API_URL}/user/refresh`,
         {},
@@ -54,7 +64,7 @@ export function AuthProvider({ children }) {
       dispatch(setAccessToken(refreshData.accessToken));
       scheduleTokenRefresh(refreshData.expiresIn);
 
-      // Now fetch user info using the new access token
+      // Fetch user info using the new access token
       const meData = await handleApiRequest('get', '/user/me');
       dispatch(setCredentials({ username: meData.userName }));
     } catch {

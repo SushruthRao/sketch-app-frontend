@@ -96,7 +96,7 @@ const Login = () => {
           onClick={handleSubmit}
         />
 
-        <motion.button variants={dropIn} initial="hidden" animate="visible" custom={3} type="button" onClick={() => { setIsTransitioning(true); navigate("/register"); }} className="font-gloria text-gray-500 text-sm">
+        <motion.button variants={dropIn} initial="hidden" animate="visible" custom={3} type="button" onClick={() => { setIsTransitioning(true); navigate("/register"); }} className="font-gloria text-gray-500 hover:text-black transition-colors text-sm mb-4">
           No account? Register here
         </motion.button>
       </motion.form>
