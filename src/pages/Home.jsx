@@ -122,20 +122,44 @@ const Home = () => {
           <AnimatedPencilWithBackground height="95%" width="100%" color="#2a2a2a" useCustomColor={true} />
         </motion.div>
   
-        <div className="flex flex-col items-center justify-center w-full max-w-2xl">
+        <div  className="flex flex-col items-center justify-center w-full max-w-2xl">
           <motion.div 
+          
             variants={dropIn} initial="hidden" animate="visible" custom={1}
             className="w-full"
           >
             <SketchTitleComponent isTitle={true}/>
           </motion.div>
   
-          <motion.div 
-            variants={dropIn} initial="hidden" animate="visible" custom={2}
-            className="text-md md:text-xl lg:text-2xl mb-8 font-gloria text-center w-full"
-          >
+          <motion.div
+          id="welcome-message"
+          variants={dropIn}
+          initial="hidden"
+          animate="visible"
+          custom={2}
+          className="text-md md:text-xl lg:text-2xl mb-8 font-gloria text-center w-full"
+        >
+          <span className="relative inline-block">
             {isAuthenticated ? `Welcome, ${username}` : `Welcome, Guest`}
-          </motion.div>
+            <svg
+              viewBox="0 0 79 11"
+              fill="none"
+              className="absolute left-3/4 -bottom-4 w-[50%] -translate-x-1/2 h-auto"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <motion.path
+                d="M0.500084 5.9054C32.2285 0.5 49.7339 0.5 72.7097 0.5C95.6855 0.5 43.5341 3.74324 33.6873 7.7973C23.8406 11.8514 67.604 0.50231 67.2393 10.5" // Example path data
+                initial={{ pathLength: 0 }}
+                whileInView={{ pathLength: 1 }}
+                transition={{ duration: 1, ease: "easeOut", delay: 1.3 }}
+                fill="transparent"
+                stroke="black"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+        </motion.div>
   
           <motion.div 
             variants={dropIn} initial="hidden" animate="visible" custom={3}

@@ -117,6 +117,7 @@ const SketchTitleComponent = ({
 
   return (
     <canvas 
+      id="title-canvas"
       ref={canvasRef} 
       width={width} 
       height={height} 
