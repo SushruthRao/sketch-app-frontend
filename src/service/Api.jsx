@@ -3,7 +3,7 @@ import axios from 'axios';
 import { store } from '../store/store';
 import { setAccessToken, clearCredentials } from '../store/authSlice';
 
-const API_URL = import.meta.env.VITE_SPRING_API_URL;
+const API_URL = (import.meta.env.VITE_SPRING_API_URL || '').replace(/\/$/, '');
 
 const api = axios.create({
   baseURL: API_URL,
