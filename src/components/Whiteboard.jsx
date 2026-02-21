@@ -187,6 +187,7 @@ const Whiteboard = ({ roomCode, isDrawer, isLobby = false }) => {
 
     const handleRoomUpdate = (data) => {
       if (data.type === "ROUND_STARTED") {
+        canvasWebSocketService.consumePendingCanvasState();
         clearCanvasLocal();
       }
     };
