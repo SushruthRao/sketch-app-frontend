@@ -20,7 +20,7 @@ const SketchLeaderboard = ({
     if (!el) return;
     const observer = new ResizeObserver((entries) => {
       const w = entries[0].contentRect.width;
-      setDims({ width: w, height: Math.min(w * 0.8, 420) });
+      setDims({ width: w, height: Math.min(w * 0.65, 300) });
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -192,8 +192,8 @@ const SketchLeaderboard = ({
   }, [dims, finalScores, fpsInterval]);
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div ref={containerRef} className="w-full">
+    <div className="w-full max-w-md mx-auto flex flex-col min-h-0">
+      <div ref={containerRef} className="w-full shrink-0">
         <canvas
           ref={canvasRef}
           width={dims.width}
@@ -203,7 +203,7 @@ const SketchLeaderboard = ({
       </div>
 
       {/* Full score list */}
-      <div className="mt-3 px-1">
+      <div className="mt-3 px-1 overflow-y-auto flex-1 min-h-0">
         {finalScores.map((s, i) => {
           const medalColors = [
             'border-yellow-400 bg-yellow-50/80 text-yellow-800',

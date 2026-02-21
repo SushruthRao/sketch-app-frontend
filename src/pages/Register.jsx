@@ -37,9 +37,26 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
-    setLoading(true);
     setStatus({ type: '', message: '' });
 
+    const username = formData.username.trim();
+    if (!username) {
+      setStatus({ type: 'error', message: 'Username cannot be blank' });
+      showErrorToast('Username cannot be blank');
+      return;
+    }
+    if (username.length > 24) {
+      setStatus({ type: 'error', message: 'Username must be 24 characters or less' });
+      showErrorToast('Username must be 24 characters or less');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_ ]+$/.test(username)) {
+      setStatus({ type: 'error', message: 'Username can only contain letters, numbers, underscores and spaces' });
+      showErrorToast('Username can only contain letters, numbers, underscores and spaces');
+      return;
+    }
+
+    setLoading(true);
     try {
       const [response] = await Promise.all([
         registerUser(formData),

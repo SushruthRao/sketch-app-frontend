@@ -94,7 +94,7 @@ const SketchChatBox = ({
         className="absolute inset-0 -z-10"
       />
 
-      <div className="flex flex-col h-80 sm:h-full p-4 overflow-hidden">
+      <div className="flex flex-col h-full p-4 overflow-hidden">
         <h3
           className="h-8 sticky text-xl font-bold text-center mb-2"
           style={{ fontFamily: "'Gloria Hallelujah', cursive" }}

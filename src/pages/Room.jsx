@@ -19,6 +19,7 @@ import SketchLeaderboard from "../components/SketchLeaderboard";
 import Whiteboard from "../components/Whiteboard";
 import SketchClipboard from "../components/SketchClipboard";
 import SketchLoader from "../components/SketchLoader";
+import SketchArrowToggle from "../components/SketchArrowToggle";
 import AuthContext from "../auth/AuthContext";
 
 const Room = () => {
@@ -54,7 +55,9 @@ const Room = () => {
   const [gameOverData, setGameOverData] = useState(null);
   const [correctGuessers, setCorrectGuessers] = useState([]);
   const [totalGuessers, setTotalGuessers] = useState(0);
-
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const sidebarOpenRef = useRef(false);
 
   const isDrawer =
     gameStarted && currentDrawer != null && currentDrawer === username;
@@ -493,6 +496,7 @@ const Room = () => {
         isMe: data.username === username,
       };
       setMessages((prev) => [...prev, chatMsg]);
+      if (!sidebarOpenRef.current) setUnreadCount((n) => n + 1);
     } else if (data.type === CONFIG.roomStatus.ALL_ROUNDS_COMPLETE) {
       setScores(data.finalScores || []);
       setRoundTimer(null);
@@ -747,6 +751,15 @@ const Room = () => {
     webSocketService.sendGuess(roomCode, text);
   };
 
+  const handleSidebarToggle = () => {
+    setSidebarOpen((prev) => {
+      const next = !prev;
+      sidebarOpenRef.current = next;
+      if (next) setUnreadCount(0);
+      return next;
+    });
+  };
+
   const getPlayerScore = (playerUsername) => {
     const scoreEntry = scores.find((s) => s.username === playerUsername);
     return scoreEntry ? scoreEntry.score : 0;
@@ -795,27 +808,25 @@ const Room = () => {
 
           {/* Center: Round info (only during active game) */}
           {gameStarted && currentRound && !isGameEnded && (
-            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 text-sm">
+            <div className="absolute left-1/2 -translate-x-1/2 flex flex-col sm:flex-row items-center gap-0.5 sm:gap-3 text-xs sm:text-sm text-center">
               <span className="font-bold">
-                Round {currentRound}
-                {totalRounds ? `/${totalRounds}` : ""}
+                Round {currentRound}{totalRounds ? `/${totalRounds}` : ""}
               </span>
-              <span className="text-gray-500">|</span>
+              <span className="hidden sm:block text-gray-500">|</span>
               <span className="text-gray-700">
-                <span className="text-black font-bold">{currentDrawer}</span> is
-                drawing
+                <span className="text-black font-bold">{currentDrawer}</span>
+                {" "}drawing
                 {isDrawer && (
                   <span className="text-blue-600 font-bold"> (You)</span>
                 )}
               </span>
-              {/* Guess progress */}
               {totalGuessers > 0 && (
-                <>
+                <span className="hidden sm:flex items-center gap-3">
                   <span className="text-gray-500">|</span>
                   <span className="text-gray-500">
                     {correctGuessers.length}/{totalGuessers} guessed
                   </span>
-                </>
+                </span>
               )}
             </div>
           )}
@@ -824,31 +835,39 @@ const Room = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col overflow-x-hidden sm:flex-row sm:overflow-hidden">
-        <div className="flex-1 flex flex-col items-center justify-center p-4">
+      {/* Mobile backdrop — closes drawer when tapping canvas */}
+      {sidebarOpen && !gameOverData && (
+        <div
+          className="fixed inset-0 bg-black/30 z-40 md:hidden"
+          onClick={handleSidebarToggle}
+        />
+      )}
+
+      <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
+        <div className={`relative min-h-0 flex flex-col items-center p-2 md:p-4 overflow-hidden h-[88dvh] md:h-auto md:flex-1 ${gameOverData ? 'justify-start overflow-y-auto' : 'justify-center'}`}>
           {!gameStarted && !isGameEnded && (
-            <div className="w-full flex flex-col items-center overflow-hidden">
-              <div className="shrink-0 py-2 font-gloria text-center">
-                <span className="text-xl md:text-2xl font-bold flex items-center justify-center gap-2 whitespace-nowrap">
+            <div className="flex-1 min-h-0 w-full flex flex-col items-center overflow-hidden">
+              <div className="shrink-0 py-1 sm:py-2 font-gloria text-center">
+                <span className="text-lg sm:text-xl md:text-2xl font-bold flex items-center justify-center gap-2 whitespace-nowrap">
                   Room : {roomCode}
-                  <SketchClipboard roomCode={roomCode} height={32} width={32} />
+                  <SketchClipboard roomCode={roomCode} height={28} width={28} />
                 </span>
-                <span className="text-gray-500 text-sm">
+                <span className="text-gray-500 text-xs sm:text-sm">
                   Waiting for players... ({players.length})
                 </span>
               </div>
-              <div className="flex-1 w-full flex flex-row items-center justify-center overflow-hidden mt-1 px-4 gap-2">
+              <div className="flex-1 min-h-0 w-full flex flex-row items-center justify-center overflow-hidden mt-1 px-2 sm:px-4 gap-2">
                 <Whiteboard roomCode={roomCode} isDrawer={true} isLobby={true} />
               </div>
             </div>
           )}
 
           {gameStarted && currentRound && !isGameEnded && !roundTransition && (
-            <div className="w-full flex flex-col items-center overflow-hidden">
-              <div className="shrink-0 flex flex-row py-2 font-gloria text-center">
+            <div className="flex-1 min-h-0 w-full flex flex-col items-center overflow-hidden">
+              <div className="shrink-0 flex flex-row flex-wrap justify-center py-1 sm:py-2 font-gloria text-center gap-1">
                 {isDrawer && currentWord && (
-                  <div className="relative inline-block px-6 py-2">
-                    <span className="relative z-10 text-green-700 text-xl font-bold">
+                  <div className="relative inline-block px-4 sm:px-6 py-1 sm:py-2">
+                    <span className="relative z-10 text-green-700 text-base sm:text-xl font-bold">
                       Your word is: {currentWord}
                     </span>
                     <div
@@ -861,8 +880,8 @@ const Room = () => {
                   </div>
                 )}
                 {!isDrawer && wordLength > 0 && (
-                  <div className="relative inline-block px-6 py-2">
-                    <span className="relative z-10 text-gray-700 text-l md:text-xl font-bold">
+                  <div className="relative inline-block px-4 sm:px-6 py-1 sm:py-2">
+                    <span className="relative z-10 text-gray-700 text-sm sm:text-xl font-bold">
                       Guess the word! ({wordLength} letters)
                     </span>
                     <div
@@ -874,13 +893,13 @@ const Room = () => {
                     />
                   </div>
                 )}
-                <div className="flex items-center gap-1 ml-3">
+                <div className="flex items-center gap-1">
                   {roundTimer && (
                     <CountdownTimer endTime={roundTimer} enableIcon={true} />
                   )}
                 </div>
               </div>
-              <div className="flex-1 w-full flex flex-row items-center justify-center overflow-hidden mt-3 px-4 gap-2">
+              <div className="flex-1 min-h-0 w-full flex flex-row items-center justify-center overflow-hidden mt-1 sm:mt-3 px-2 sm:px-4 gap-2">
 
                 <Whiteboard roomCode={roomCode} isDrawer={isDrawer} />
 
@@ -916,23 +935,48 @@ const Room = () => {
               onHome={() => navigate("/")}
             />
           )}
+
+          {/* Mobile toggle button — floats over canvas bottom-right */}
+          {!gameOverData && (
+            <div className="absolute bottom-0 right-3 z-30 md:hidden">
+              <SketchArrowToggle
+                isOpen={sidebarOpen}
+                onClick={handleSidebarToggle}
+                unreadCount={unreadCount}
+              />
+            </div>
+          )}
         </div>
 
-        {/* RIGHT SIDEBAR: Players + Chat + Buttons */}
-        <div className="w-full sm:w-80 shrink-0 flex flex-col">
+        {/* RIGHT SIDEBAR: right-side drawer on mobile, static column on desktop */}
+        <div
+          className={`
+            fixed top-0 right-0 h-full z-50 w-[min(300px,85vw)] flex flex-col overflow-hidden
+            transition-transform duration-300 ease-in-out
+            md:relative md:top-auto md:right-auto md:h-auto md:w-80 md:z-auto md:translate-x-0 md:shrink-0
+            ${gameOverData ? 'hidden md:flex' : sidebarOpen ? 'translate-x-0' : 'translate-x-full'}
+          `}
+          style={{
+            backgroundImage: `url(${paperBgOld})`,
+            backgroundSize: 'cover',
+            backgroundAttachment: 'fixed',
+            backgroundPosition: 'center',
+            backgroundColor: '#e1e5e8',
+          }}
+        >
           {/* Players list */}
-          <div ref={playersRef} className="shrink-0 relative max-h-[200px]">
+          <div ref={playersRef} className="shrink-0 relative">
             <canvas
               ref={playersCanvasRef}
               width={playersDimensions.width}
               height={playersDimensions.height}
               className="absolute inset-0 -z-10"
             />
-            <div className="p-3 overflow-y-auto max-h-[200px]">
-              <h2 className="font-gloria text-sm font-bold mb-2 text-gray-600">
+            <div className="p-2 sm:p-3 overflow-y-auto max-h-[130px] sm:max-h-[200px]">
+              <h2 className="font-gloria text-xs sm:text-sm font-bold mb-1 sm:mb-2 text-gray-600">
                 Players ({players.length})
               </h2>
-              <ul className="flex flex-col gap-1">
+              <ul className="flex flex-col gap-0.5 sm:gap-1">
                 {players.length > 0 ? (
                   players.map((player) => {
                     const playerUsername = player.username || player;
@@ -947,7 +991,7 @@ const Room = () => {
                     return (
                       <li
                         key={player.userId || playerUsername}
-                        className={`font-gloria text-sm px-2 py-1 rounded flex items-center justify-between ${isPlayerDrawing
+                        className={`font-gloria text-xs sm:text-sm px-2 py-0.5 sm:py-1 rounded flex items-center justify-between ${isPlayerDrawing
                             ? "bg-green-50/50 border border-green-300"
                             : "hover:bg-gray-10"
                           }`}
