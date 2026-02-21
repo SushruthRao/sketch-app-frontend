@@ -9,7 +9,7 @@ import { scheduleTokenRefresh, clearScheduledRefresh } from '../service/Api';
 import { store } from '../store/store';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_SPRING_API_URL;
+const API_URL = (import.meta.env.VITE_SPRING_API_URL || '').replace(/\/$/, '');
 
 export function AuthProvider({ children }) {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
