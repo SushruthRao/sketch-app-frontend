@@ -42,7 +42,7 @@ class WebSocketService {
                     this.connected = false;
                     console.log("ws connection closed");
                 },
-                reconnectDelay : 5000
+                reconnectDelay : 0
             }
         );
         this.client.activate();
@@ -101,6 +101,18 @@ class WebSocketService {
             const data = JSON.parse(message.body);
             console.log('Round state received', data);
             this.notify('roundState', data);
+        })
+    }
+
+    subscribeToPublicRooms() {
+        if(!this.connected)
+        {
+            console.error("subscribeToPublicRooms : not connected to ws")
+            return;
+        }
+        this.client.subscribe('/topic/public-rooms', (message) => {
+            const data = JSON.parse(message.body);
+            this.notify('publicRoomsUpdate', data);
         })
     }
 

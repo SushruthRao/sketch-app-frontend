@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import rough from "roughjs";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import useSketchFrameCache from '../hooks/useSketchFrameCache';
 
 const SketchChatBox = ({
   messages,
@@ -17,7 +17,6 @@ const SketchChatBox = ({
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const scrollRef = useRef(null);
-  const requestRef = useRef();
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -34,38 +33,20 @@ const SketchChatBox = ({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || dimensions.width === 0) return;
-    const rc = rough.canvas(canvas);
-    const ctx = canvas.getContext("2d");
-    let lastDrawTime = performance.now();
-    const fpsInterval = 1000 / fps;
+  const drawFrame = useCallback((rc, ctx, canvas) => {
+    rc.rectangle(5, 5, dimensions.width - 10, dimensions.height - 10, {
+      roughness: 0.7,
+      stroke: "#333",
+      strokeWidth: 2,
+      fill: "transparent",
+    });
+    rc.line(5, 50, dimensions.width - 5, 52, {
+      roughness: 0.7,
+      strokeWidth: 1.5,
+    });
+  }, [dimensions]);
 
-    const animate = (currentTime) => {
-      requestRef.current = requestAnimationFrame(animate);
-      const elapsed = currentTime - lastDrawTime;
-
-      if (elapsed > fpsInterval) {
-        lastDrawTime = currentTime - (elapsed % fpsInterval);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        rc.rectangle(5, 5, dimensions.width - 10, dimensions.height - 10, {
-          roughness: 0.7,
-          stroke: "#333",
-          strokeWidth: 2,
-          fill: "transparent",
-        });
-        rc.line(5, 50, dimensions.width - 5, 52, {
-          roughness: 0.7,
-          strokeWidth: 1.5,
-        });
-      }
-    };
-
-    requestRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(requestRef.current);
-  }, [dimensions, fps]);
+  useSketchFrameCache(canvasRef, drawFrame, [dimensions, fps], { fps });
 
   const getPlaceholder = () => {
     if (disabled) return "You're drawing! ...";
@@ -99,7 +80,7 @@ const SketchChatBox = ({
           className="h-8 sticky text-xl font-bold text-center mb-2"
           style={{ fontFamily: "'Gloria Hallelujah', cursive" }}
         >
-          Chat !  
+          Chat !
         </h3>
         <div
           ref={scrollRef}

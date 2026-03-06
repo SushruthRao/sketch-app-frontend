@@ -42,7 +42,7 @@ class CanvasWebSocketService {
                     this.notify('connectionStatus', false);
                     console.log("canvas ws connection closed");
                 },
-                reconnectDelay: 5000
+                reconnectDelay: 0
             }
         );
         this.client.activate();

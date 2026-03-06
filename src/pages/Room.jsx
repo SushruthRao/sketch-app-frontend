@@ -246,57 +246,6 @@ const Room = () => {
       };
       setMessages((prevMessages) => [...prevMessages, playerJoinedChatMessage]);
       showSuccessToast(data.username + CONFIG.messages.playerJoinedMessage);
-    } else if (data.type === CONFIG.roomStatus.PLAYER_DISCONNECTED) {
-      logger(
-        CONFIG.fileName,
-        CONFIG.methods.handleRoomUpdate,
-        data.username + CONFIG.messages.playerDisconnectedMessage,
-        data.username,
-      );
-      setDisconnectedPlayers((prev) => new Set([...prev, data.username]));
-      showErrorToast(data.username + CONFIG.messages.playerDisconnectedMessage);
-      const playerDisconnectedChatMessage = {
-        text: data.username + CONFIG.messages.playerDisconnectedMessage,
-        isSystem: true,
-      };
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        playerDisconnectedChatMessage,
-      ]);
-      const endTime = Date.now() + data.gracePeriod * 1000;
-      setReconnectionTimers((prev) => ({
-        ...prev,
-        [data.username]: endTime,
-      }));
-
-      setTimeout(() => {
-        setReconnectionTimers((prev) => {
-          const newTimers = { ...prev };
-          delete newTimers[data.username];
-          return newTimers;
-        });
-      }, data.gracePeriod * 1000);
-    } else if (data.type === CONFIG.roomStatus.PLAYER_RECONNECTED) {
-      logger(
-        CONFIG.fileName,
-        CONFIG.methods.handleRoomUpdate,
-        data.username + CONFIG.messages.playerReconnectedMessage,
-        data.username,
-      );
-      setDisconnectedPlayers((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(data.username);
-        return newSet;
-      });
-
-      setReconnectionTimers((prev) => {
-        const newTimers = { ...prev };
-        delete newTimers[data.username];
-        return newTimers;
-      });
-      showSuccessToast(
-        data.username + CONFIG.messages.playerReconnectedMessage,
-      );
     } else if (data.type === CONFIG.roomStatus.PLAYER_LEFT) {
       logger(
         CONFIG.fileName,

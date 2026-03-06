@@ -168,6 +168,16 @@ export const ROOM_CONFIG = {
 }
 
 
+export const CURRENT_ROOMS_CONFIG = {
+  title: "Open Rooms",
+  messages: {
+    loading: "Loading...",
+    empty: "No open rooms",
+    joinButton: "Join",
+  },
+};
+
+
 /*
     WHITEBOARD CONFIG
 */

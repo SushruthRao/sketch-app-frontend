@@ -1,18 +1,16 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useRef, useState } from 'react';
-import rough from 'roughjs';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import useSketchFrameCache from '../hooks/useSketchFrameCache';
 
-const SketchPageNotFound = ({ 
+const SketchPageNotFound = ({
   color = 'rgba(107, 107, 107, 0.5)',
   stroke = '#000',
   strokeWidth = 2.5,
   fps = 7
 }) => {
   const containerRef = useRef(null);
-  const canvasRef = useRef(null);   
-  const requestRef = useRef();
+  const canvasRef = useRef(null);
   const [dims, setDims] = useState({ width: 0, height: 0 });
-  const fpsInterval = 1000 / fps;
 
   const paths = {
     four: "M30 10 L10 70 L60 70 M45 10 L45 90",
@@ -25,7 +23,7 @@ const SketchPageNotFound = ({
       for (let entry of entries) {
         setDims({
           width: entry.contentRect.width,
-          height: Math.min(entry.contentRect.width * 0.4, 300) 
+          height: Math.min(entry.contentRect.width * 0.4, 300)
         });
       }
     });
@@ -34,64 +32,46 @@ const SketchPageNotFound = ({
     return () => resizeObserver.disconnect();
   }, []);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || dims.width === 0) return;
+  const drawFrame = useCallback((rc, ctx, canvas) => {
+    const scale = dims.width < 400 ? 0.6 : 1;
+    const digitWidth = 70 * scale;
+    const spacing = 30 * scale;
+    const totalWidth = (digitWidth * 3) + (spacing * 2);
 
-    const rc = rough.canvas(canvas);
-    const ctx = canvas.getContext('2d');
-    let lastDrawTime = performance.now();
+    const startX = (dims.width - totalWidth) / 2;
+    const startY = (dims.height - (100 * scale)) / 2;
 
-    const animate = (currentTime) => {
-      requestRef.current = requestAnimationFrame(animate);
-      const elapsed = currentTime - lastDrawTime;
-
-      if (elapsed > fpsInterval) {
-        lastDrawTime = currentTime - (elapsed % fpsInterval);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        const scale = dims.width < 400 ? 0.6 : 1; 
-        const digitWidth = 70 * scale;
-        const spacing = 30 * scale;
-        const totalWidth = (digitWidth * 3) + (spacing * 2);
-        
-        const startX = (dims.width - totalWidth) / 2;
-        const startY = (dims.height - (100 * scale)) / 2;
-
-        const style = {
-          stroke,
-          strokeWidth,
-          roughness: 1.5,
-          bowing: 2,
-          fill: color,
-          fillStyle: 'hachure',
-          hachureGap: 4
-        };
-
-        const drawDigit = (path, x) => {
-          ctx.save();
-          ctx.translate(x, startY);
-          ctx.scale(scale, scale);
-          rc.path(path, style);
-          ctx.restore();
-        };
-
-        drawDigit(paths.four, startX);
-        drawDigit(paths.zero, startX + digitWidth + spacing);
-        drawDigit(paths.four, startX + (digitWidth + spacing) * 2);
-      }
+    const style = {
+      stroke,
+      strokeWidth,
+      roughness: 1.5,
+      bowing: 2,
+      fill: color,
+      fillStyle: 'hachure',
+      hachureGap: 4
     };
 
-    requestRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(requestRef.current);
-  }, [dims, fpsInterval, color, stroke, strokeWidth]);
+    const drawDigit = (path, x) => {
+      ctx.save();
+      ctx.translate(x, startY);
+      ctx.scale(scale, scale);
+      rc.path(path, style);
+      ctx.restore();
+    };
+
+    drawDigit(paths.four, startX);
+    drawDigit(paths.zero, startX + digitWidth + spacing);
+    drawDigit(paths.four, startX + (digitWidth + spacing) * 2);
+  }, [dims, color, stroke, strokeWidth]);
+
+  useSketchFrameCache(canvasRef, drawFrame, [dims, fps, color, stroke, strokeWidth], { fps });
 
   return (
     <div ref={containerRef} className="w-full max-w-2xl mx-auto">
-      <canvas 
-        ref={canvasRef} 
-        width={dims.width} 
-        height={dims.height} 
+      <canvas
+        ref={canvasRef}
+        width={dims.width}
+        height={dims.height}
         className="block w-full h-auto"
       />
     </div>

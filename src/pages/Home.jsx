@@ -1,11 +1,14 @@
 /* eslint-disable no-unused-vars */
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import SketchTitleComponent from "../components/SketchTitleComponent";
 import SketchButton from "../components/SketchButton";
 import SketchInput from "../components/SketchInput";
+import SketchCheckbox from "../components/SketchCheckbox";
 import AuthContext from "../auth/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { createRoom, getRoomDetails } from "../service/RoomService";
+import { createRoom, getRoomDetails, getPublicRooms } from "../service/RoomService";
+import webSocketService from "../service/WebSocketService";
+import CurrentRooms from "../components/CurrentRooms";
 import { useToast } from "../toast/CustomToastHook";
 import { HOME_CONFIG as CONFIG } from "../config/LabelConfig";
 import { logger } from "../utils/Logger";
@@ -21,9 +24,43 @@ const Home = () => {
   const [roomCode, setRoomCode] = useState("");
   const { showSuccessToast, showErrorToast } = useToast();
   const { isAuthenticated, username, logout, isLoggingOut, loading } = useContext(AuthContext);
-  const [isRecon, setIsRecon] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
+  const [publicRooms, setPublicRooms] = useState([]);
+  const [isLoadingRooms, setIsLoadingRooms] = useState(false);
 
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const loadRooms = async () => {
+      setIsLoadingRooms(true);
+      try {
+        const response = await getPublicRooms();
+        if (response.success) setPublicRooms(response.rooms || []);
+      } catch (err) {
+        logger(CONFIG.fileName, "fetchPublicRooms", err);
+      } finally {
+        setIsLoadingRooms(false);
+      }
+    };
+
+    loadRooms();
+    webSocketService.on("publicRoomsUpdate", loadRooms);
+    webSocketService.connect(
+      () => webSocketService.subscribeToPublicRooms(),
+      (err) => logger(CONFIG.fileName, "wsLobbyConnect", err),
+    );
+
+    // Polling fallback: refresh room list every 5s in case a WS event is missed
+    const pollInterval = setInterval(loadRooms, 5000);
+
+    return () => {
+      clearInterval(pollInterval);
+      webSocketService.off("publicRoomsUpdate", loadRooms);
+      webSocketService.disconnect();
+    };
+  }, [isAuthenticated]);
 
    const dropIn = {
     hidden: { y: -50, opacity: 0 },
@@ -40,7 +77,7 @@ const Home = () => {
 
   const handleCreateRoom = async () => {
     try {
-      const response = await createRoom();
+      const response = await createRoom(isPublic);
       if (response.roomCode) {
         setIsNavigating(true);
         navigate(`/room/${response.roomCode}`);
@@ -63,22 +100,21 @@ const Home = () => {
     }
   };
 
-  const handleJoinRoom = async (e) => {
+  const handleJoinRoom = async (e, directRoomCode = null) => {
     if (e) e.preventDefault();
-    if (!roomCode) {
+    const code = directRoomCode || roomCode;
+    if (!code) {
       showErrorToast(CONFIG.messages.handleJoinRoomErrorToast);
       return;
     }
 
     try {
-      const response = await getRoomDetails(roomCode);
+      const response = await getRoomDetails(code);
       if (response.success) {
         const players = response.players;
         const userIsReconnecting = players.some(
           (player) => player.username === username,
         );
-
-        setIsRecon(userIsReconnecting);
 
         if (response.room.status === CONFIG.roomStatus.FINISHED) {
           showErrorToast(CONFIG.messages.roomHasFinishedToast);
@@ -92,11 +128,11 @@ const Home = () => {
           return;
         }
         setIsNavigating(true);
-        navigate(`/room/${roomCode}`);
+        navigate(`/room/${code}`);
         showSuccessToast(CONFIG.messages.createRoomSuccess);
       }
     } catch (err) {
-      showErrorToast(`Roomcode: ${roomCode} not found`);
+      showErrorToast(`Roomcode: ${code} not found`);
       logger(CONFIG.fileName, CONFIG.methods.handleJoinRoom, err);
     }
   };
@@ -193,13 +229,18 @@ const Home = () => {
           </span>
         </motion.div>
   
-          <motion.div 
+          <motion.div
             variants={dropIn} initial="hidden" animate="visible" custom={3}
             className="flex w-full max-w-xs flex-col gap-6"
           >
             {isAuthenticated ? (
               <>
-                <SketchButton text="Create Room" color="rgba(34, 197, 94, 0.4)" onClick={handleCreateRoom} />
+                <div className="flex flex-col gap-3">
+                  <SketchButton text="Create Room" color="rgba(34, 197, 94, 0.4)" onClick={handleCreateRoom} />
+                  <div className="flex items-center justify-center">
+                    <SketchCheckbox checked={isPublic} onChange={setIsPublic} label="Public" />
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
                   <div className="h-[1px] grow bg-gray-500" />
                   <span className="font-gloria text-gray-600">or</span>
@@ -228,13 +269,24 @@ const Home = () => {
               </>
             )}
           </motion.div>
+
         </div>
   
-        <motion.div 
+        <motion.div
           variants={dropIn} initial="hidden" animate="visible" custom={4}
-          className="hidden h-100 md:flex w-full items-center justify-center"
+          className="flex w-full items-center justify-center py-4 md:py-0"
         >
-          <AnimatedEraserWithBackground height="70%" width="100%" color="#2a2a2a" useCustomColor={true} />
+          {isAuthenticated ? (
+            <CurrentRooms
+              rooms={publicRooms}
+              loading={isLoadingRooms}
+              onJoin={(code) => handleJoinRoom(null, code)}
+            />
+          ) : (
+            <div className="hidden md:flex w-full items-center justify-center h-full">
+              <AnimatedEraserWithBackground height="70%" width="100%" color="#2a2a2a" useCustomColor={true} />
+            </div>
+          )}
         </motion.div>
       </div>
     );
