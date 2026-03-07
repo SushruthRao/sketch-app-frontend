@@ -58,7 +58,7 @@ const CurrentRooms = ({ fps = 7, rooms = [], loading = false, onJoin }) => {
           {CONFIG.title}
         </h3>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto sketch-scrollbar">
           {loading ? (
             <p
               className="text-center text-gray-500 text-sm mt-4"

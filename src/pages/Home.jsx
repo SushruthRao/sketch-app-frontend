@@ -17,7 +17,9 @@ import EraserScene from "../components/EraserScene";
 import AnimatedPencilWithBackground from "../components/AnimatedPencilWithBackground";
 import AnimatedEraserWithBackground from "../components/AnimatedEraserWithBackground";
 import SketchLoader from "../components/SketchLoader";
-import { motion } from "framer-motion"; // 1. Import motion
+import SketchGearButton from "../components/SketchGearButton";
+import MatchHistoryOverlay from "../components/MatchHistoryOverlay";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ const Home = () => {
   const [isPublic, setIsPublic] = useState(true);
   const [publicRooms, setPublicRooms] = useState([]);
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
 
   useEffect(() => {
@@ -151,6 +154,22 @@ const Home = () => {
 
   return (
       <div className="flex min-h-screen w-full flex-col md:grid md:grid-cols-3 items-center p-3 overflow-hidden">
+        {/* Gear button — top-right corner, only when logged in */}
+        {isAuthenticated && (
+          <div className="fixed top-3 right-3 z-40">
+            <SketchGearButton onClick={() => setShowHistory(true)} size={44} />
+          </div>
+        )}
+
+        {/* Match history overlay */}
+        <AnimatePresence>
+          {showHistory && (
+            <MatchHistoryOverlay
+              username={username}
+              onClose={() => setShowHistory(false)}
+            />
+          )}
+        </AnimatePresence>
         <motion.div
         variants={dropIn}
         initial="hidden"

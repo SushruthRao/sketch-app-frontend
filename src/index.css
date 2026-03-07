@@ -87,6 +87,13 @@ body {
   border-radius: 10px;
 }
 
+.sketch-scrollbar {
+  scrollbar-width: none;
+}
+.sketch-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .sketch-input::placeholder {
   font-family: "Gloria Hallelujah", cursive;
   opacity: 0.6;
@@ -96,13 +103,6 @@ body {
   font-family: "Gloria Hallelujah", cursive;
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 10px;
-}
 .sketch-input::placeholder {
   font-family: "Gloria Hallelujah", cursive;
 }
