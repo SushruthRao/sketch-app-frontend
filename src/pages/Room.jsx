@@ -626,6 +626,7 @@ const Room = () => {
             webSocketService.connect(
               () => {
                 canvasWebSocketService.connect(
+                  roomCode,
                   () => {
                     setWsConnected(true);
                     setRoomLoading(false);
@@ -644,6 +645,7 @@ const Room = () => {
             );
           } else if (!canvasWebSocketService.connected) {
             canvasWebSocketService.connect(
+              roomCode,
               () => {
                 setWsConnected(true);
                 setRoomLoading(false);

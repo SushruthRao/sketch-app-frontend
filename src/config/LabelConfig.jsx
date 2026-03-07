@@ -189,7 +189,7 @@ export const WHITEBOARD_CONFIG = {
     canvas : {
       width : 800,
       height : 600,
-      sendInterval : 130, 
+      sendInterval : 150, 
     }
 }
 
